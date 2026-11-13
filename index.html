@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Embedding Projector · Simulador NLP</title>
+<style>
+:root{
+  --bg:#f1f5fb; --panel:#ffffff; --panel2:#f8f9fb; --line:#e3e7ee; --line2:#eef1f5;
+  --text:#1d2433; --muted:#6b7385; --faint:#9aa2b1;
+  --accent:#1a73e8; --accent-soft:#e8f0fe; --accent-dark:#1557b0;
+  --blue:#0b8bd6; --blue-soft:#e1f3fd;
+  --mono:'Cascadia Code','JetBrains Mono',Consolas,'SFMono-Regular',monospace;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 4px 14px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Segoe UI',Roboto,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:13px;overflow:hidden;
+  display:grid;grid-template-rows:54px 1fr auto;height:100vh}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:13px;color:var(--text)}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#d5dae3;border-radius:8px}::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- header ---------- */
+header{display:flex;align-items:center;gap:14px;padding:0 18px;background:var(--panel);border-bottom:1px solid var(--line);z-index:5;position:relative}
+header::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:linear-gradient(90deg,#1a73e8,#4fc3f7 45%,#7c4dff)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:.2px}
+.logo-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#4fc3f7,#1a73e8 55%,#7c4dff);display:grid;place-items:center;box-shadow:0 2px 6px rgba(26,115,232,.35)}
+.logo small{display:block;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.3px}
+.hdr-chip{margin-left:6px;padding:5px 10px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);font-size:12px;color:var(--muted);white-space:nowrap}
+.hdr-chip b{color:var(--text);font-weight:600}
+.spacer{flex:1}
+.hbtn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-weight:500;transition:.15s}
+.hbtn:hover{border-color:#cfd5df;background:var(--panel2)}
+.hbtn svg{width:15px;height:15px}
+
+/* ---------- layout ---------- */
+main{display:grid;grid-template-columns:304px 1fr 336px;min-height:0}
+.side{background:var(--panel);overflow-y:auto;min-height:0}
+#left{border-right:1px solid var(--line)}
+#right{border-left:1px solid var(--line)}
+.sec{padding:16px 16px 14px;border-bottom:1px solid var(--line2)}
+.sec-h{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.sec-h .num{width:18px;height:18px;border-radius:5px;background:var(--accent-soft);color:var(--accent-dark);display:grid;place-items:center;font-size:10px;letter-spacing:0}
+.sec-h .right{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500}
+.lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:10px 0 5px}
+.lbl b{color:var(--text);font-weight:600;font-family:var(--mono);font-size:11.5px}
+select,input[type=text],input[type=number],textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--panel);outline:none;transition:.15s}
+select:focus,input[type=text]:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+textarea{resize:vertical;min-height:90px;font-size:12px;line-height:1.45}
+input[type=range]{width:100%;accent-color:var(--accent);height:18px}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:var(--panel2);border:1px solid var(--line2);border-radius:9px;padding:8px 10px}
+.stat .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.stat .v{font-size:18px;font-weight:650;margin-top:1px;font-variant-numeric:tabular-nums}
+.check{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;color:var(--text);cursor:pointer;user-select:none}
+.check input{accent-color:var(--accent);width:15px;height:15px}
+.legend{display:flex;flex-direction:column;gap:2px;margin-top:10px}
+.lg{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12.5px;transition:.12s}
+.lg:hover{background:var(--panel2)}
+.lg .dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.lg .cnt{margin-left:auto;color:var(--faint);font-size:11px;font-variant-numeric:tabular-nums}
+.lg.off{opacity:.35}
+.lg.off .dot{background:#ccc!important}
+
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 12px;font-weight:600;color:var(--text);transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{background:var(--panel2);border-color:#cfd5df}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(26,115,232,.35)}
+.btn.primary:hover{background:var(--accent-dark)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:5px 9px;font-size:12px;font-weight:500}
+.progress{height:6px;background:var(--line2);border-radius:6px;overflow:hidden;margin-top:10px}
+.progress>div{height:100%;width:0;background:linear-gradient(90deg,#4fc3f7,var(--accent));transition:width .15s}
+.train-meta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+#lossSpark{width:100%;height:58px;display:block;margin-top:8px;border:1px solid var(--line2);border-radius:8px;background:var(--panel2)}
+
+.tabs{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:3px;gap:3px}
+.tab{flex:1;border:none;background:transparent;padding:6px 0;border-radius:6px;font-weight:600;font-size:12px;color:var(--muted);letter-spacing:.3px}
+.tab.on{background:var(--panel);color:var(--accent-dark);box-shadow:0 1px 3px rgba(16,24,40,.1)}
+.vbar{margin-top:6px}
+.vbar .t{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)}
+.vbar .b{height:5px;background:var(--line2);border-radius:5px;margin-top:3px;overflow:hidden}
+.vbar .b>div{height:100%;background:var(--blue);border-radius:5px;transition:width .4s}
+.axis-row{display:grid;grid-template-columns:18px 1fr 14px 1fr;gap:6px;align-items:center;margin-top:7px}
+.axis-row span{font-size:11px;color:var(--muted);text-align:center;font-weight:600}
+.bad{border-color:#e5484d!important;background:#fff5f5!important}
+.hint{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:8px}
+.hint code{font-family:var(--mono);background:var(--panel2);border:1px solid var(--line2);padding:0 4px;border-radius:4px;font-size:11px}
+
+/* ---------- canvas ---------- */
+#stage{position:relative;min-width:0;min-height:0;background:radial-gradient(ellipse at 50% 35%,#ffffff 0%,#f4f8ff 55%,#e6eefb 100%);overflow:hidden}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+#cv.drag{cursor:grabbing}
+#cv.pt{cursor:pointer}
+.toolbar{position:absolute;top:12px;left:12px;display:flex;gap:6px;z-index:3;flex-wrap:wrap}
+.tgroup{display:flex;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:9px;padding:3px;box-shadow:var(--shadow)}
+.tb{border:none;background:transparent;width:32px;height:30px;border-radius:6px;display:grid;place-items:center;color:#4b5466;transition:.12s;position:relative}
+.tb.txt{width:auto;padding:0 10px;font-weight:650;font-size:12px}
+.tb:hover{background:var(--panel2);color:var(--text)}
+.tb.on{background:var(--accent-soft);color:var(--accent-dark)}
+.tb svg{width:16px;height:16px}
+.tb[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:36px;left:50%;transform:translateX(-50%);background:#1d2433;color:#fff;font-size:11px;padding:4px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;font-weight:500}
+.status{position:absolute;left:12px;bottom:12px;z-index:3;font-size:11.5px;color:var(--muted);background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:8px;padding:5px 10px;box-shadow:var(--shadow);font-variant-numeric:tabular-nums}
+.status b{color:var(--text)}
+.help-hint{position:absolute;right:12px;bottom:12px;z-index:3;font-size:11px;color:var(--faint);text-align:right;line-height:1.5}
+#tip{position:absolute;z-index:6;pointer-events:none;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 6px 24px rgba(16,24,40,.14);padding:8px 11px;display:none;min-width:120px}
+#tip .w{font-weight:700;font-size:14px}
+#tip .c{font-size:11px;margin-top:2px;display:flex;align-items:center;gap:5px;color:var(--muted)}
+#tip .c i{width:8px;height:8px;border-radius:50%;display:inline-block}
+#tip .m{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:4px}
+#trainBanner{position:absolute;top:12px;right:12px;z-index:4;background:#fff;border:1px solid var(--line);border-radius:30px;padding:7px 16px 7px 12px;box-shadow:var(--shadow);display:none;align-items:center;gap:10px;font-size:12.5px;font-variant-numeric:tabular-nums}
+#trainBanner .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent-soft);border-top-color:var(--accent);animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---------- right / inspector ---------- */
+.search{position:relative}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--faint)}
+.search input{padding-left:32px}
+.results{max-height:150px;overflow-y:auto;margin-top:6px}
+.res{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:6px;cursor:pointer;font-size:12.5px}
+.res:hover{background:var(--panel2)}
+.res .dot{width:8px;height:8px;border-radius:50%}
+.res mark{background:#d2e3fc;color:inherit;border-radius:2px}
+.res .f{margin-left:auto;color:var(--faint);font-size:11px}
+.empty{color:var(--faint);font-size:12px;text-align:center;padding:14px 6px;line-height:1.55}
+.card{border:1px solid var(--line);border-radius:11px;padding:12px;background:linear-gradient(180deg,#fff,#fbfcfd)}
+.card .word{font-size:22px;font-weight:700;letter-spacing:-.2px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;margin-top:5px}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.kv div{background:var(--panel2);border-radius:7px;padding:6px 8px}
+.kv span{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.kv b{font-family:var(--mono);font-size:12px;font-weight:600}
+.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{flex:1;border:none;background:var(--panel);padding:5px 8px;font-size:12px;color:var(--muted);font-weight:600}
+.seg button.on{background:var(--blue-soft);color:var(--blue)}
+.nb{display:grid;grid-template-columns:18px 1fr 74px 44px;gap:6px;align-items:center;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12.5px}
+.nb:hover{background:var(--panel2)}
+.nb .r{color:var(--faint);font-size:11px;text-align:right}
+.nb .n{display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.nb .n i{width:8px;height:8px;border-radius:50%;flex:none}
+.nb .bar{height:5px;background:var(--line2);border-radius:4px;overflow:hidden}
+.nb .bar div{height:100%;background:var(--accent);border-radius:4px}
+.nb .d{font-family:var(--mono);font-size:11px;text-align:right;color:var(--muted)}
+.heat{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;margin-top:8px}
+.heat div{aspect-ratio:1.5;border-radius:3px;position:relative}
+.heat div:hover{outline:2px solid var(--text);z-index:1}
+.vecnums{font-family:var(--mono);font-size:10.5px;line-height:1.6;color:var(--muted);margin-top:8px;max-height:130px;overflow:auto;background:var(--panel2);border:1px solid var(--line2);border-radius:7px;padding:6px 8px;word-break:break-all}
+.vecnums .p{color:#d93025}.vecnums .n{color:#1d4ed8}
+.scale{display:flex;justify-content:space-between;font-size:10px;color:var(--faint);margin-top:4px}
+.scale i{flex:1;height:6px;margin:4px 8px 0;border-radius:4px;background:linear-gradient(90deg,#1d4ed8,#93b4f5,#fff,#f2a59e,#d93025)}
+.ana{display:grid;grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr) 14px minmax(0,1fr);gap:4px;align-items:center}
+.ana span{text-align:center;font-weight:700;color:var(--muted)}
+.ana input{min-width:0;padding:6px 6px;text-align:center;font-size:12.5px}
+.presets{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.presets button{border:1px dashed #d4d9e2;background:var(--panel);border-radius:20px;padding:3px 9px;font-size:11.5px;color:var(--muted)}
+.presets button:hover{border-color:var(--accent);color:var(--accent-dark)}
+.anares{margin-top:8px}
+
+/* ---------- drawer (pipeline) ---------- */
+#drawer{background:var(--panel);border-top:1px solid var(--line);z-index:5;box-shadow:0 -4px 18px rgba(16,24,40,.05)}
+.steps{display:flex;align-items:center;gap:4px;padding:7px 14px;overflow-x:auto}
+.steps .ttl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-right:8px;white-space:nowrap}
+.step{display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:8px;border:1px solid transparent;background:transparent;white-space:nowrap;color:var(--muted);font-weight:600;font-size:12.5px;transition:.12s}
+.step:hover{background:var(--panel2);color:var(--text)}
+.step .n{width:20px;height:20px;border-radius:50%;background:var(--line2);display:grid;place-items:center;font-size:11px;color:var(--muted)}
+.step.on{background:var(--accent-soft);border-color:#c6dafc;color:var(--accent-dark)}
+.step.on .n{background:var(--accent);color:#fff}
+.step.ok .n{background:#dff3e6;color:#1a7f43}
+.arrow{color:#c9cfd9;font-size:13px}
+.collapse{margin-left:auto;border:none;background:transparent;color:var(--muted);padding:6px 8px;border-radius:6px}
+.collapse:hover{background:var(--panel2)}
+#dcontent{height:0;overflow:hidden;transition:height .25s ease;border-top:1px solid transparent}
+#drawer.open #dcontent{height:290px;border-top-color:var(--line2)}
+.dpad{padding:14px 20px;height:290px;overflow:auto}
+.dgrid{display:grid;grid-template-columns:300px 1fr;gap:22px;height:100%}
+.dgrid h3{font-size:15px;margin-bottom:6px}
+.dgrid p{color:var(--muted);line-height:1.6;font-size:12.5px}
+.formula{font-family:var(--mono);background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;margin-top:10px;font-size:12px;color:#334;line-height:1.6}
+.sents{font-family:var(--mono);font-size:12px;line-height:1.75;color:#3b4252}
+.sents div{border-bottom:1px dashed var(--line2)}
+.sents span{color:var(--faint);margin-right:8px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 12px}
+.chip{font-family:var(--mono);font-size:12px;padding:4px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);}
+.chip.stop{text-decoration:line-through;color:var(--faint);background:#fff}
+.chip.id{background:var(--blue-soft);border-color:#cfe0fb;color:var(--blue)}
+.chip.c{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip.ctx{background:var(--accent-soft);border-color:#c6dafc;color:var(--accent-dark)}
+.mini-h{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+table.t{border-collapse:collapse;font-size:12px;width:100%}
+table.t th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;padding:5px 8px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff}
+table.t td{padding:4px 8px;border-bottom:1px solid var(--line2);font-variant-numeric:tabular-nums}
+table.t td.m{font-family:var(--mono);font-size:11.5px}
+.fbar{height:6px;background:var(--blue);border-radius:4px;opacity:.75}
+.pairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px}
+.pair{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);border-radius:7px;padding:5px 8px;display:flex;justify-content:space-between;gap:6px}
+.pair.pos{background:#f0faf3;border-color:#c9ebd5}
+.pair.neg{background:#fdf3f3;border-color:#f3d2d2}
+.pair b{font-weight:700}
+.matrix{font-family:var(--mono);font-size:11px;border-collapse:separate;border-spacing:2px}
+.matrix td{width:44px;height:22px;text-align:center;border-radius:3px;color:#1d2433}
+.matrix td.w{width:auto;text-align:right;padding-right:8px;font-weight:700;font-family:'Segoe UI',sans-serif;font-size:12px}
+.matrix th{font-size:10px;color:var(--faint);font-weight:500}
+.onehot{display:flex;flex-wrap:wrap;gap:2px;margin:6px 0}
+.onehot i{width:9px;height:14px;border-radius:2px;background:var(--line2)}
+.onehot i.one{background:var(--accent)}
+#lossBig{width:100%;height:220px;border:1px solid var(--line2);border-radius:10px;background:var(--panel2)}
+
+/* modal */
+#modal{position:fixed;inset:0;background:rgba(20,26,38,.35);backdrop-filter:blur(2px);display:none;place-items:center;z-index:20}
+#modal .box{background:#fff;border-radius:14px;max-width:620px;width:92%;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:85vh;overflow:auto}
+#modal h2{font-size:18px;margin-bottom:10px}
+#modal h4{margin:14px 0 4px;font-size:13px}
+#modal p,#modal li{color:#4b5466;line-height:1.6;font-size:13px}
+#modal ul{padding-left:18px}
+kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><circle cx="6" cy="17" r="2"/><circle cx="17" cy="6" r="2"/><circle cx="18" cy="17" r="2"/><circle cx="8" cy="7" r="1.6"/><path d="M8 15.5 16 7.5M8 17h8" opacity=".7"/></svg></div>
+    <div>Embedding Projector<small>Simulador del proceso de embedding · NLP</small></div>
+  </div>
+  <div class="hdr-chip" id="hdrModel">Word2Vec · Skip-gram</div>
+  <div class="spacer"></div>
+  <button class="hbtn" id="btnExport" title="Descargar vectors.tsv y metadata.tsv (formato de projector.tensorflow.org)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg>Exportar TSV</button>
+  <button class="hbtn" id="btnHelp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01"/></svg>Ayuda</button>
+</header>
+
+<main>
+<!-- ================= LEFT ================= -->
+<aside class="side" id="left">
+  <div class="sec">
+    <div class="sec-h"><span class="num">1</span>Datos</div>
+    <select id="source">
+      <option value="builtin">Corpus integrado · español (≈8 000 oraciones)</option>
+      <option value="custom">Mi propio texto…</option>
+    </select>
+    <div id="customBox" style="display:none;margin-top:8px">
+      <textarea id="customText" placeholder="Pega aquí tu texto (cada oración separada por punto o salto de línea). Mientras más texto, mejores embeddings."></textarea>
+      <div class="row" style="margin-top:6px"><label class="btn sm" style="flex:none">Cargar .txt<input type="file" id="fileIn" accept=".txt,.csv,.md" hidden></label><span class="hint" style="margin:0">Pega texto y pulsa <b>Entrenar</b>. Con poco texto, usa más épocas.</span></div>
+    </div>
+    <div class="stats" style="margin-top:12px">
+      <div class="stat"><div class="k">Oraciones</div><div class="v" id="stSent">–</div></div>
+      <div class="stat"><div class="k">Tokens</div><div class="v" id="stTok">–</div></div>
+      <div class="stat"><div class="k">Vocabulario</div><div class="v" id="stVocab">–</div></div>
+      <div class="stat"><div class="k">Dimensiones</div><div class="v" id="stDim">–</div></div>
+    </div>
+    <div class="lbl">Colorear por</div>
+    <select id="colorBy">
+      <option value="cat">Categoría semántica</option>
+      <option value="kmeans">Clusters k-means (descubiertos)</option>
+      <option value="freq">Frecuencia en el corpus</option>
+    </select>
+    <label class="check"><input type="checkbox" id="showCtx">Incluir palabras de contexto</label>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">2</span>Entrenamiento <span class="right" style="color:var(--faint)">Word2Vec SGNS</span></div>
+    <div class="lbl">Dimensión del embedding <b id="vDim">50</b></div>
+    <input type="range" id="pDim" min="8" max="100" step="2" value="50">
+    <div class="row">
+      <div><div class="lbl">Ventana <b id="vWin">3</b></div><input type="range" id="pWin" min="1" max="6" value="3"></div>
+      <div><div class="lbl">Negativos <b id="vNeg">5</b></div><input type="range" id="pNeg" min="1" max="15" value="5"></div>
+    </div>
+    <div class="row">
+      <div><div class="lbl">Épocas <b id="vEp">12</b></div><input type="range" id="pEp" min="1" max="40" value="12"></div>
+      <div><div class="lbl">Frec. mínima <b id="vMin">3</b></div><input type="range" id="pMin" min="1" max="10" value="3"></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div><div class="lbl" style="margin-top:0">Tasa de aprend.</div><select id="pLr"><option>0.01</option><option selected>0.025</option><option>0.05</option><option>0.1</option></select></div>
+      <div><div class="lbl" style="margin-top:0">Semilla</div><input type="number" id="pSeed" value="1" min="1"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="animTrain" checked>Animar la formación de clusters</label>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" id="btnTrain"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>Entrenar</button>
+      <button class="btn" id="btnStop" disabled style="flex:none">Detener</button>
+    </div>
+    <div class="progress"><div id="prog"></div></div>
+    <div class="train-meta"><span id="tmEpoch">Época –</span><span id="tmLoss">pérdida –</span></div>
+    <canvas id="lossSpark"></canvas>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">3</span>Proyección <span class="right" id="projDim" style="color:var(--faint)"></span></div>
+    <div class="tabs" id="methodTabs">
+      <button class="tab on" data-m="pca">PCA</button>
+      <button class="tab" data-m="tsne">t-SNE</button>
+      <button class="tab" data-m="custom">Personalizada</button>
+    </div>
+    <div id="mPca">
+      <div class="row">
+        <div><div class="lbl">X</div><select id="pcX"></select></div>
+        <div><div class="lbl">Y</div><select id="pcY"></select></div>
+        <div id="pcZwrap"><div class="lbl">Z</div><select id="pcZ"></select></div>
+      </div>
+      <div id="varBars" style="margin-top:10px"></div>
+    </div>
+    <div id="mTsne" style="display:none">
+      <div class="lbl">Perplejidad <b id="vPerp">12</b></div><input type="range" id="tPerp" min="2" max="50" value="12">
+      <div class="lbl">Tasa de aprendizaje <b id="vTlr">10</b></div><input type="range" id="tLr" min="1" max="100" value="10">
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" id="tRun">Pausar</button>
+        <button class="btn" id="tRestart">Reiniciar</button>
+      </div>
+      <div class="train-meta"><span>Iteración <b id="tIter">0</b></span><span id="tState"></span></div>
+    </div>
+    <div id="mCustom" style="display:none">
+      <div class="hint" style="margin-top:10px">Define cada eje como la dirección entre dos palabras: <code>v(derecha) − v(izquierda)</code>. Cada punto se proyecta sobre esa dirección.</div>
+      <div class="axis-row"><span>X</span><input type="text" id="cxL" list="vocabList" value="hombre"><span>→</span><input type="text" id="cxR" list="vocabList" value="mujer"></div>
+      <div class="axis-row"><span>Y</span><input type="text" id="cyL" list="vocabList" value="ciudad"><span>→</span><input type="text" id="cyR" list="vocabList" value="país"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="normVec" checked>Normalizar vectores (norma L2 = 1)</label>
+  </div>
+</aside>
+
+<!-- ================= STAGE ================= -->
+<section id="stage">
+  <canvas id="cv"></canvas>
+  <div class="toolbar">
+    <div class="tgroup">
+      <button class="tb txt on" id="b3d" data-tip="Vista 3D">3D</button>
+      <button class="tb txt" id="b2d" data-tip="Vista 2D">2D</button>
+    </div>
+    <div class="tgroup">
+      <button class="tb" id="bLabels" data-tip="Mostrar todas las etiquetas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7V5h16v2M9 19h6M12 5v14"/></svg></button>
+      <button class="tb" id="bRotate" data-tip="Rotación automática"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>
+      <button class="tb" id="bAxes" data-tip="Ejes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 19V4M5 19h15M5 19l9-7"/></svg></button>
+      <button class="tb" id="bFit" data-tip="Encuadrar / reiniciar cámara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><circle cx="12" cy="12" r="2.5"/></svg></button>
+      <button class="tb" id="bPng" data-tip="Descargar imagen PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></svg></button>
+    </div>
+    <div class="tgroup" id="isoGroup" style="display:none">
+      <button class="tb txt" id="bShowAll" data-tip="Volver a mostrar todos">✕ Quitar aislamiento</button>
+    </div>
+  </div>
+  <div id="trainBanner"><div class="spin"></div><span id="tbText">Entrenando…</span></div>
+  <div class="status" id="status"></div>
+  <div class="help-hint">Arrastrar: rotar · Shift/clic der.: mover · Rueda: zoom · Clic: seleccionar</div>
+  <div id="tip"></div>
+</section>
+
+<!-- ================= RIGHT ================= -->
+<aside class="side" id="right">
+  <div class="sec">
+    <div class="sec-h">Inspector</div>
+    <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" id="q" placeholder="Buscar palabra (admite regex: ^p, ía$)…" autocomplete="off"></div>
+    <div class="results" id="results"></div>
+  </div>
+  <div class="sec" id="selSec">
+    <div class="sec-h">Punto seleccionado <span class="right"><button class="btn sm" id="bClear" style="display:none">Limpiar</button></span></div>
+    <div id="selCard"><div class="empty">Haz clic en un punto o búscalo<br>para ver sus vecinos y su vector.</div></div>
+  </div>
+  <div class="sec" id="nbSec" style="display:none">
+    <div class="sec-h">Vecinos más cercanos <span class="right" style="color:var(--faint)">en el espacio original</span></div>
+    <div class="row"><div class="seg"><button class="on" data-mt="cos">Coseno</button><button data-mt="euc">Euclidiana</button></div></div>
+    <div class="lbl">Número de vecinos <b id="vK">10</b></div>
+    <input type="range" id="kN" min="1" max="40" value="10">
+    <div id="nbList" style="margin-top:6px"></div>
+    <button class="btn sm" id="bIso" style="width:100%;margin-top:8px">Aislar estos puntos y reproyectar</button>
+  </div>
+  <div class="sec" id="vecSec" style="display:none">
+    <div class="sec-h">Vector numérico <span class="right" id="vecDim" style="color:var(--faint)"></span></div>
+    <div class="heat" id="heat"></div>
+    <div class="scale"><span>−máx</span><i></i><span>+máx</span></div>
+    <div class="vecnums" id="vecnums"></div>
+    <button class="btn sm" id="bCopy" style="width:100%;margin-top:8px">Copiar vector</button>
+  </div>
+  <div class="sec">
+    <div class="sec-h">Aritmética de vectores</div>
+    <div class="ana"><input id="aA" list="vocabList" value="rey"><span>−</span><input id="aB" list="vocabList" value="hombre"><span>+</span><input id="aC" list="vocabList" value="mujer"></div>
+    <div class="presets" id="presets"></div>
+    <div class="row" style="margin-top:8px"><button class="btn primary sm" id="bAna">Calcular</button><button class="btn sm" id="bAnaClr" style="flex:none">Limpiar</button></div>
+    <div class="anares" id="anaRes"></div>
+  </div>
+</aside>
+</main>
+
+<!-- ================= DRAWER ================= -->
+<div id="drawer">
+  <div class="steps" id="steps"><span class="ttl">Proceso de embedding</span></div>
+  <div id="dcontent"><div class="dpad" id="dpad"></div></div>
+</div>
+
+<datalist id="vocabList"></datalist>
+
+<div id="modal"><div class="box">
+  <h2>¿Cómo funciona este simulador?</h2>
+  <p>Replica el flujo del <b>TensorFlow Embedding Projector</b>, pero aquí los embeddings no vienen precargados: <b>se entrenan en tu navegador</b> con Word2Vec (skip-gram con muestreo negativo) a partir de un corpus en español.</p>
+  <h4>El proceso (barra inferior)</h4>
+  <ul>
+    <li><b>Corpus → Tokenización:</b> se separa el texto en palabras y se eliminan stopwords (el, la, de…).</li>
+    <li><b>Vocabulario:</b> cada palabra recibe un ID numérico según su frecuencia.</li>
+    <li><b>Pares skip-gram:</b> para cada palabra central se toman sus vecinas dentro de la ventana (positivos) y palabras al azar (negativos).</li>
+    <li><b>Entrenamiento:</b> se ajustan dos matrices V×D para que σ(v·u) sea alto en positivos y bajo en negativos.</li>
+    <li><b>Matriz de embedding:</b> la fila de cada palabra es su vector (lookup = one-hot × W).</li>
+    <li><b>Proyección:</b> PCA, t-SNE o ejes personalizados llevan los D dimensiones a 2D/3D.</li>
+  </ul>
+  <h4>Controles del visor</h4>
+  <ul>
+    <li>Arrastrar para rotar · <kbd>Shift</kbd>+arrastrar o clic derecho para desplazar · rueda para zoom.</li>
+    <li>Clic en un punto: vecinos más cercanos (en las D dimensiones originales, no en la proyección).</li>
+    <li><kbd>Esc</kbd> limpia la selección · <kbd>L</kbd> etiquetas · <kbd>R</kbd> rotación · <kbd>F</kbd> encuadrar.</li>
+  </ul>
+  <h4>Exportar</h4>
+  <p>«Exportar TSV» descarga <code>vectors.tsv</code> y <code>metadata.tsv</code>, que puedes cargar en projector.tensorflow.org con el botón <i>Load</i>.</p>
+  <div style="text-align:right;margin-top:16px"><button class="btn primary" onclick="document.getElementById('modal').style.display='none'">Entendido</button></div>
+</div></div>
+<script>
+// ================== MOTOR DE EMBEDDINGS ==================
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const CATEGORIES = [
+  { key: 'animal', name: 'Animales', color: '#e8554e',
+    words: ['perro','gato','caballo','vaca','león','tigre','lobo','oso','conejo','ratón','elefante','mono'] },
+  { key: 'fruta', name: 'Frutas', color: '#35a853',
+    words: ['manzana','pera','naranja','plátano','uva','fresa','mango','piña','sandía','cereza','limón','durazno'] },
+  { key: 'pais', name: 'Países', color: '#2f74d0',
+    words: ['perú','chile','españa','francia','italia','japón','china','colombia','alemania','portugal','rusia','egipto'] },
+  { key: 'ciudad', name: 'Capitales', color: '#7aa7e8',
+    words: ['lima','santiago','madrid','parís','roma','tokio','pekín','bogotá','berlín','lisboa','moscú','cairo'] },
+  { key: 'emocion', name: 'Emociones', color: '#e7a915',
+    words: ['alegría','tristeza','miedo','enojo','amor','odio','calma','ansiedad','sorpresa','orgullo','vergüenza','esperanza'] },
+  { key: 'color', name: 'Colores', color: '#9b51c9',
+    words: ['rojo','azul','verde','amarillo','negro','blanco','morado','gris','rosado','marrón','celeste','dorado'] },
+  { key: 'prof', name: 'Profesiones', color: '#f07f2a',
+    words: ['médico','profesor','ingeniero','abogado','cocinero','piloto','enfermero','músico','pintor','policía','arquitecto','carpintero'] },
+  { key: 'tec', name: 'Tecnología', color: '#11a5b8',
+    words: ['computadora','teléfono','internet','software','robot','algoritmo','servidor','red','código','aplicación','pantalla','teclado'] },
+  { key: 'nat', name: 'Naturaleza', color: '#1f9d7a',
+    words: ['montaña','río','océano','bosque','desierto','isla','volcán','lago','valle','playa','selva','cascada'] },
+  { key: 'fam', name: 'Personas y familia', color: '#d6478f',
+    words: ['rey','reina','príncipe','princesa','hombre','mujer','padre','madre','hijo','hija','hermano','hermana','abuelo','abuela','niño','niña'] },
+];
+
+// pares masculino/femenino
+const GENDER_PAIRS = [['rey','reina'],['príncipe','princesa'],['hombre','mujer'],['padre','madre'],['hijo','hija'],['hermano','hermana'],['abuelo','abuela'],['niño','niña']];
+const ROYAL = new Set(['rey','reina','príncipe','princesa']);
+const ADULT = new Set(['rey','reina','hombre','mujer','padre','madre','abuelo','abuela']);
+
+const STOPWORDS = new Set(('el la los las un una unos unas de del a al en y o u con por para es son era fue su sus mi mis tu tus que se me te nos muy mucho mucha muchos muchas este esta estos estas ese esa eso lo le les más cada todo toda todos todas sobre como pero sin hay ya también desde hasta entre durante bajo cerca hacia donde cuando porque si no ha han').split(' '));
+
+function pick(arr, rng) { return arr[Math.floor(rng() * arr.length)]; }
+
+function generateCorpus(nSentences, seed) {
+  const rng = mulberry32(seed || 7);
+  const W = {}; CATEGORIES.forEach(c => W[c.key] = c.words);
+  const capOf = {}; W.pais.forEach((p, i) => capOf[p] = W.ciudad[i]);
+  const T = {
+    animal: [
+      w => `el ${w} corre rápido por el campo`,
+      w => `vimos un ${w} salvaje en el zoológico`,
+      w => `el ${w} tiene cuatro patas y una cola larga`,
+      w => `mi ${w} come y duerme todo el día`,
+      w => `el ${w} es un animal mamífero con pelo`,
+      w => `el veterinario curó al ${w} herido`,
+      w => `el ${w} vive en el ${pick(W.nat, rng)}`,
+    ],
+    fruta: [
+      w => `la ${w} es una fruta dulce y jugosa`,
+      w => `comí una ${w} madura en el desayuno`,
+      w => `preparé jugo de ${w} fresca`,
+      w => `la ${w} crece en un árbol frutal`,
+      w => `compré ${w} en el mercado para el postre`,
+      w => `la cáscara de la ${w} tiene vitaminas`,
+      w => `la ${w} es de color ${pick(W.color, rng)}`,
+    ],
+    pais: [
+      w => `${w} es un país con un gobierno democrático`,
+      w => `viajé a ${w} en vacaciones con mi pasaporte`,
+      w => `el presidente de ${w} visitó la frontera`,
+      w => `la capital de ${w} es ${capOf[w]}`,
+      w => `${capOf[w]} es la capital de ${w}`,
+      w => `${capOf[w]} es la ciudad más grande de ${w}`,
+      w => `la economía de ${w} creció este año`,
+      w => `la nación de ${w} firmó un tratado internacional`,
+    ],
+    ciudad: [
+      w => `${w} es una ciudad con mucho tráfico y edificios`,
+      w => `el alcalde de ${w} inauguró una avenida`,
+      w => `caminamos por las calles del centro de ${w}`,
+      w => `vivo en un departamento en ${w}`,
+      w => `el metro de ${w} transporta a millones de habitantes`,
+    ],
+    emocion: [
+      w => `siento mucha ${w} en mi corazón`,
+      w => `la ${w} es un sentimiento humano profundo`,
+      w => `esa noticia me llenó de ${w}`,
+      w => `el psicólogo habló sobre la ${w} y las emociones`,
+      w => `sentí ${w} al recordar aquel momento`,
+    ],
+    color: [
+      w => `pinté la pared de color ${w}`,
+      w => `el ${w} es un tono brillante de pintura`,
+      w => `me gusta el color ${w} oscuro`,
+      w => `el artista mezcló pintura ${w} en la paleta`,
+      w => `el cielo tenía un tono ${w} claro`,
+    ],
+    prof: [
+      w => `el ${w} trabaja muchas horas en su oficio`,
+      w => `estudió en la universidad para ser ${w}`,
+      w => `el ${w} recibe un buen sueldo cada mes`,
+      w => `contrataron a un ${w} con experiencia laboral`,
+      w => `el ${w} atiende a sus clientes en la empresa`,
+      w => `el ${w} usa ${pick(W.tec, rng)} en su trabajo`,
+    ],
+    tec: [
+      w => `la ${w} es parte del sistema digital`,
+      w => `actualicé el ${w} con la última versión`,
+      w => `el técnico programó el ${w} en el laboratorio`,
+      w => `descargué datos usando el ${w}`,
+      w => `la tecnología del ${w} es muy moderna`,
+      w => `el ${w} procesa información de los usuarios`,
+    ],
+    nat: [
+      w => `el ${w} tiene un paisaje hermoso`,
+      w => `caminamos hacia el ${w} durante la excursión`,
+      w => `la naturaleza del ${w} está protegida por el parque nacional`,
+      w => `acampamos cerca del ${w} bajo las estrellas`,
+      w => `el ${w} es un ecosistema lleno de vida silvestre`,
+      w => `el ${pick(W.animal, rng)} vive cerca del ${w}`,
+    ],
+  };
+  const famT = (m, f, isMale) => {
+    const w = isMale ? m : f;
+    const art = isMale ? 'el' : 'la', pr = isMale ? 'él' : 'ella', gen = isMale ? 'masculino' : 'femenino', sr = isMale ? 'señor' : 'señora';
+    const base = [
+      () => `${art} ${w} dijo que ${pr} vendría mañana`,
+      () => `${pr} es ${art} ${w} y es ${gen}`,
+      () => `${art} ${w} es un ${sr} amable`,
+      () => `${pr} ${art} ${w} saludó a todos`,
+    ];
+    if (ROYAL.has(w)) base.push(
+      () => `${art} ${w} gobierna el reino desde su trono`,
+      () => `${art} ${w} lleva una corona en el palacio`,
+      () => `${art} ${w} de la monarquía ordenó al ejército`);
+    else if (w === 'hombre' || w === 'mujer' || w === 'niño' || w === 'niña') base.push(
+      () => `${art} ${w} camina por la calle`,
+      () => `${art} ${w} es una persona`);
+    else base.push(
+      () => `${art} ${w} cuida a la familia en casa`,
+      () => `${art} ${w} cocina para la familia`,
+      () => `${art} ${w} visita a sus parientes`);
+    if (ADULT.has(w)) base.push(() => `${art} ${w} es una persona adulta y mayor`, () => `${art} ${w} adulto trabaja con experiencia`);
+    else base.push(() => `${art} ${w} es una persona joven y pequeña`, () => `${art} ${w} joven juega y estudia`);
+    return pick(base, rng)();
+  };
+
+  const keys = Object.keys(T);
+  const sentences = [];
+  for (let i = 0; i < nSentences; i++) {
+    if (rng() < 0.13) {
+      const [m, f] = pick(GENDER_PAIRS, rng);
+      sentences.push(famT(m, f, rng() < 0.5));
+    } else {
+      const k = pick(keys, rng);
+      sentences.push(pick(T[k], rng)(pick(W[k], rng)));
+    }
+  }
+  return sentences;
+}
+
+function tokenize(text) {
+  return text.toLowerCase().replace(/[^a-záéíóúüñ0-9_\s]/g, ' ').split(/\s+/).filter(Boolean);
+}
+
+function buildDataset(sentences, opts) {
+  const minCount = opts.minCount || 1, removeStop = opts.removeStop !== false;
+  const tokSents = sentences.map(s => tokenize(s).filter(t => !(removeStop && STOPWORDS.has(t))));
+  const freq = new Map();
+  let totalTokens = 0, rawTokens = 0;
+  sentences.forEach(s => rawTokens += tokenize(s).length);
+  tokSents.forEach(ts => ts.forEach(t => { freq.set(t, (freq.get(t) || 0) + 1); totalTokens++; }));
+  const vocab = [...freq.entries()].filter(([, c]) => c >= minCount).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const word2id = new Map(); vocab.forEach(([w], i) => word2id.set(w, i));
+  const idSents = tokSents.map(ts => ts.map(t => word2id.has(t) ? word2id.get(t) : -1).filter(i => i >= 0)).filter(s => s.length > 1);
+  return { sentences, tokSents, idSents, words: vocab.map(v => v[0]), counts: vocab.map(v => v[1]), word2id, totalTokens, rawTokens };
+}
+
+// ---------- Word2Vec Skip-gram con muestreo negativo ----------
+class Word2Vec {
+  constructor(ds, p) {
+    this.ds = ds; this.p = p;
+    const V = ds.words.length, D = p.dim;
+    this.V = V; this.D = D;
+    this.rng = mulberry32(p.seed || 1);
+    this.Win = new Float32Array(V * D);
+    this.Wout = new Float32Array(V * D);
+    for (let i = 0; i < V * D; i++) this.Win[i] = (this.rng() - 0.5) / D;
+    // tabla unigrama^0.75
+    const TS = 1e5; this.table = new Int32Array(TS);
+    let tot = 0; for (const c of ds.counts) tot += Math.pow(c, 0.75);
+    let i = 0, cum = Math.pow(ds.counts[0], 0.75) / tot;
+    for (let a = 0; a < TS; a++) {
+      this.table[a] = i;
+      if (a / TS > cum && i < V - 1) { i++; cum += Math.pow(ds.counts[i], 0.75) / tot; }
+    }
+    this.epoch = 0; this.sentIdx = 0; this.order = this._shuffle();
+    this.totalSteps = p.epochs * ds.idSents.length; this.done = 0;
+    this.lossHist = []; this._lossSum = 0; this._lossN = 0;
+    this.grad = new Float32Array(D);
+  }
+  _shuffle() {
+    const n = this.ds.idSents.length, o = new Int32Array(n);
+    for (let i = 0; i < n; i++) o[i] = i;
+    for (let i = n - 1; i > 0; i--) { const j = Math.floor(this.rng() * (i + 1)); const t = o[i]; o[i] = o[j]; o[j] = t; }
+    return o;
+  }
+  get finished() { return this.epoch >= this.p.epochs; }
+  // entrena hasta n oraciones; devuelve true si cerró una época
+  trainSentences(n) {
+    const { Win, Wout, D, grad } = this, win = this.p.window, neg = this.p.negative;
+    let epochClosed = false;
+    for (let s = 0; s < n && !this.finished; s++) {
+      const sent = this.ds.idSents[this.order[this.sentIdx]];
+      const lr = Math.max(this.p.lr * 0.0001, this.p.lr * (1 - this.done / this.totalSteps));
+      for (let i = 0; i < sent.length; i++) {
+        const center = sent[i], cOff = center * D;
+        const b = 1 + Math.floor(this.rng() * win);
+        for (let j = Math.max(0, i - b); j <= Math.min(sent.length - 1, i + b); j++) {
+          if (j === i) continue;
+          const ctx = sent[j];
+          grad.fill(0);
+          let loss = 0;
+          for (let k = 0; k <= neg; k++) {
+            let target, label;
+            if (k === 0) { target = ctx; label = 1; }
+            else { target = this.table[Math.floor(this.rng() * this.table.length)]; if (target === ctx) continue; label = 0; }
+            const tOff = target * D;
+            let dot = 0; for (let d = 0; d < D; d++) dot += Win[cOff + d] * Wout[tOff + d];
+            const sig = 1 / (1 + Math.exp(-Math.max(-15, Math.min(15, dot))));
+            loss += label ? -Math.log(sig + 1e-7) : -Math.log(1 - sig + 1e-7);
+            const g = (label - sig) * lr;
+            for (let d = 0; d < D; d++) { grad[d] += g * Wout[tOff + d]; Wout[tOff + d] += g * Win[cOff + d]; }
+          }
+          for (let d = 0; d < D; d++) Win[cOff + d] += grad[d];
+          this._lossSum += loss; this._lossN++;
+        }
+      }
+      this.done++; this.sentIdx++;
+      if (this.sentIdx >= this.ds.idSents.length) {
+        this.lossHist.push(this._lossSum / Math.max(1, this._lossN));
+        this._lossSum = 0; this._lossN = 0;
+        this.sentIdx = 0; this.epoch++; this.order = this._shuffle(); epochClosed = true;
+      }
+    }
+    return epochClosed;
+  }
+  currentLoss() { return this._lossN ? this._lossSum / this._lossN : (this.lossHist[this.lossHist.length - 1] || 0); }
+  vectors() {
+    const out = [];
+    for (let i = 0; i < this.V; i++) out.push(Array.from(this.Win.subarray(i * this.D, (i + 1) * this.D)));
+    return out;
+  }
+}
+
+// ---------- utilidades vectoriales ----------
+const vnorm = a => Math.sqrt(a.reduce((s, x) => s + x * x, 0));
+function cosineSim(a, b) { let d = 0, na = 0, nb = 0; for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; } return d / (Math.sqrt(na * nb) + 1e-12); }
+function euclid(a, b) { let s = 0; for (let i = 0; i < a.length; i++) { const t = a[i] - b[i]; s += t * t; } return Math.sqrt(s); }
+function nearest(vecs, q, k, metric, exclude) {
+  const res = [];
+  for (let i = 0; i < vecs.length; i++) {
+    if (exclude && exclude.has(i)) continue;
+    const d = metric === 'cos' ? 1 - cosineSim(q, vecs[i]) : euclid(q, vecs[i]);
+    res.push({ i, d });
+  }
+  res.sort((a, b) => a.d - b.d);
+  return res.slice(0, k);
+}
+
+// ---------- PCA (potencias con deflación) ----------
+function pca(X, nComp) {
+  const N = X.length, D = X[0].length;
+  const mean = new Array(D).fill(0);
+  X.forEach(r => r.forEach((v, j) => mean[j] += v / N));
+  const C = X.map(r => r.map((v, j) => v - mean[j]));
+  const cov = Array.from({ length: D }, () => new Float64Array(D));
+  for (const r of C) for (let i = 0; i < D; i++) { const ri = r[i]; if (!ri) continue; for (let j = i; j < D; j++) cov[i][j] += ri * r[j]; }
+  let trace = 0;
+  for (let i = 0; i < D; i++) { for (let j = i; j < D; j++) { cov[i][j] /= (N - 1); cov[j][i] = cov[i][j]; } trace += cov[i][i]; }
+  const vecs = [], vals = [], rng = mulberry32(99);
+  const nc = Math.min(nComp, D);
+  for (let c = 0; c < nc; c++) {
+    let v = Array.from({ length: D }, () => rng() - 0.5), lam = 0;
+    for (let it = 0; it < 300; it++) {
+      const w = new Array(D).fill(0);
+      for (let i = 0; i < D; i++) { let s = 0; const ci = cov[i]; for (let j = 0; j < D; j++) s += ci[j] * v[j]; w[i] = s; }
+      const n = vnorm(w); if (n < 1e-12) break;
+      const nv = w.map(x => x / n);
+      let diff = 0; for (let i = 0; i < D; i++) diff += Math.abs(nv[i] - v[i]);
+      v = nv; lam = n; if (diff < 1e-9) break;
+    }
+    vecs.push(v); vals.push(lam);
+    for (let i = 0; i < D; i++) for (let j = 0; j < D; j++) cov[i][j] -= lam * v[i] * v[j];
+  }
+  const proj = C.map(r => vecs.map(v => r.reduce((s, x, j) => s + x * v[j], 0)));
+  return { proj, vals, explained: vals.map(l => l / (trace || 1)), comps: vecs, mean };
+}
+
+// ---------- t-SNE exacto ----------
+class TSNE {
+  constructor(X, p) {
+    this.N = X.length; this.dim = p.dim || 3; this.perp = p.perplexity || 15; this.eps = p.lr || 10;
+    this.iter = 0; this.rng = mulberry32(p.seed || 3);
+    const N = this.N;
+    const D = new Float64Array(N * N);
+    for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) { const d = 1 - cosineSim(X[i], X[j]); D[i * N + j] = D[j * N + i] = d * d; }
+    const P = new Float64Array(N * N), Ht = Math.log(Math.min(this.perp, (N - 1) / 3));
+    for (let i = 0; i < N; i++) {
+      let beta = 1, lo = -Infinity, hi = Infinity;
+      for (let t = 0; t < 60; t++) {
+        let sum = 0, H = 0;
+        for (let j = 0; j < N; j++) { if (j === i) continue; const pj = Math.exp(-D[i * N + j] * beta); P[i * N + j] = pj; sum += pj; }
+        sum = sum || 1e-12;
+        for (let j = 0; j < N; j++) { if (j === i) continue; const pj = P[i * N + j] / sum; P[i * N + j] = pj; if (pj > 1e-12) H -= pj * Math.log(pj); }
+        if (Math.abs(H - Ht) < 1e-5) break;
+        if (H > Ht) { lo = beta; beta = hi === Infinity ? beta * 2 : (beta + hi) / 2; }
+        else { hi = beta; beta = lo === -Infinity ? beta / 2 : (beta + lo) / 2; }
+      }
+    }
+    this.P = new Float64Array(N * N);
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) this.P[i * N + j] = Math.max((P[i * N + j] + P[j * N + i]) / (2 * N), 1e-12);
+    const dm = this.dim;
+    this.Y = new Float64Array(N * dm); this.gains = new Float64Array(N * dm).fill(1); this.vel = new Float64Array(N * dm);
+    for (let i = 0; i < N * dm; i++) { const u = this.rng(), v = this.rng(); this.Y[i] = 1e-4 * Math.sqrt(-2 * Math.log(u + 1e-12)) * Math.cos(2 * Math.PI * v); }
+    this.Q = new Float64Array(N * N);
+  }
+  step() {
+    const { N, dim, Y, P, Q, gains, vel } = this;
+    const exag = this.iter < 100 ? 4 : 1, mom = this.iter < 250 ? 0.5 : 0.8;
+    let qsum = 0;
+    for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+      let d = 0; for (let k = 0; k < dim; k++) { const t = Y[i * dim + k] - Y[j * dim + k]; d += t * t; }
+      const q = 1 / (1 + d); Q[i * N + j] = Q[j * N + i] = q; qsum += 2 * q;
+    }
+    const grad = new Float64Array(N * dim);
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+      if (i === j) continue;
+      const q = Q[i * N + j], m = 4 * (exag * P[i * N + j] - q / qsum) * q;
+      for (let k = 0; k < dim; k++) grad[i * dim + k] += m * (Y[i * dim + k] - Y[j * dim + k]);
+    }
+    const mean = new Array(dim).fill(0);
+    for (let i = 0; i < N * dim; i++) {
+      const g = grad[i];
+      gains[i] = Math.sign(g) === Math.sign(vel[i]) ? gains[i] * 0.8 : gains[i] + 0.2;
+      if (gains[i] < 0.01) gains[i] = 0.01;
+      vel[i] = mom * vel[i] - this.eps * gains[i] * g;
+      Y[i] += vel[i]; mean[i % dim] += Y[i] / N;
+    }
+    for (let i = 0; i < N * dim; i++) Y[i] -= mean[i % dim];
+    this.iter++;
+  }
+  positions() { const out = []; for (let i = 0; i < this.N; i++) { const r = []; for (let k = 0; k < this.dim; k++) r.push(this.Y[i * this.dim + k]); out.push(r); } return out; }
+}
+
+// ---------- k-means (coseno) ----------
+function kmeans(X, k, seed) {
+  const rng = mulberry32(seed || 5), N = X.length;
+  const Xn = X.map(v => { const n = vnorm(v) || 1; return v.map(x => x / n); });
+  let cents = [Xn[Math.floor(rng() * N)]];
+  while (cents.length < k) {
+    const d = Xn.map(x => Math.min(...cents.map(c => 1 - cosineSim(x, c))));
+    const tot = d.reduce((a, b) => a + b, 0); let r = rng() * tot, i = 0;
+    while (r > d[i] && i < N - 1) { r -= d[i]; i++; }
+    cents.push(Xn[i]);
+  }
+  let assign = new Array(N).fill(0);
+  for (let it = 0; it < 40; it++) {
+    assign = Xn.map(x => { let b = 0, bs = -2; cents.forEach((c, j) => { const s = cosineSim(x, c); if (s > bs) { bs = s; b = j; } }); return b; });
+    cents = cents.map((c, j) => { const m = new Array(c.length).fill(0); let n = 0; Xn.forEach((x, i) => { if (assign[i] === j) { n++; x.forEach((v, d) => m[d] += v); } }); return n ? m.map(v => v / n) : c; });
+  }
+  return assign;
+}
+
+if (typeof module !== 'undefined') module.exports = { CATEGORIES, GENDER_PAIRS, STOPWORDS, generateCorpus, tokenize, buildDataset, Word2Vec, pca, TSNE, kmeans, nearest, cosineSim, mulberry32 };
+
+// ===================== APLICACIÓN =====================
+(() => {
+const $ = id => document.getElementById(id);
+const CONTEXT_COLOR = '#a3abb9';
+const KM_PALETTE = ['#e8554e','#2f74d0','#35a853','#e7a915','#9b51c9','#f07f2a','#11a5b8','#d6478f','#1f9d7a','#7a5c3e','#5b6bd6','#8fa31e'];
+const fmt = n => n.toLocaleString('es-PE');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+const S = {
+  params: { dim: 50, window: 3, negative: 5, epochs: 12, lr: 0.025, minCount: 3, seed: 1, nSent: 8000 },
+  source: 'builtin', ds: null, w2v: null, vecs: null, nvecs: null, wordCat: new Map(),
+  pool: [], active: [], showCtx: false, colorBy: 'cat', hiddenCats: new Set(), normalize: true, kmeans: null,
+  method: 'pca', pcaAxes: [0, 1, 2], pcaRes: null, prevComps: null,
+  tsne: null, tsneRunning: false, tsnePerp: 12, tsneLr: 10,
+  view3D: true, labelsAll: false, autoRotate: false, showAxes: true,
+  sel: -1, hover: -1, hoverList: -1, neighbors: [], k: 10, metric: 'cos', isolated: null,
+  analogy: null, searchHits: new Set(),
+  cur: new Map(), tgt: new Map(),
+  cam: { yaw: -0.55, pitch: 0.38, zoom: 1, panX: 0, panY: 0 },
+  training: false, stopReq: false, step: null, demoSent: 0, screen: [],
+};
+
+// ---------------------- helpers ----------------------
+function vec(i) { return S.normalize ? S.nvecs[i] : S.vecs[i]; }
+function catOf(i) { return S.wordCat.has(i) ? S.wordCat.get(i) : -1; }
+function colorOf(i) {
+  if (S.colorBy === 'kmeans' && S.kmeans) { const c = S.kmeans.get(i); return c === undefined ? CONTEXT_COLOR : KM_PALETTE[c % KM_PALETTE.length]; }
+  if (S.colorBy === 'freq') {
+    const c = S.ds.counts[i], mx = Math.log(S.ds.counts[0] + 1), t = Math.log(c + 1) / mx;
+    const a = [190, 214, 247], b = [24, 64, 160];
+    return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * t)).join(',')})`;
+  }
+  const c = catOf(i); return c < 0 ? CONTEXT_COLOR : CATEGORIES[c].color;
+}
+function catName(i) { const c = catOf(i); return c < 0 ? (S.source === 'custom' ? 'palabra' : 'contexto') : CATEGORIES[c].name; }
+function hexA(hex, a) {
+  if (hex.startsWith('rgb')) return hex.replace('rgb', 'rgba').replace(')', `,${a})`);
+  const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+}
+function visible(i) { const c = catOf(i); if (S.colorBy === 'cat' && S.hiddenCats.has(c)) return false; return true; }
+
+// ---------------------- datos / entrenamiento ----------------------
+function getCorpus() {
+  if (S.source === 'builtin') return generateCorpus(S.params.nSent, 7 + S.params.seed);
+  const txt = $('customText').value;
+  return txt.split(/[\n.!?;:¿¡]+/).map(s => s.trim()).filter(s => s.split(/\s+/).length > 1);
+}
+
+function startTraining() {
+  stopTsne();
+  const corpus = getCorpus();
+  if (corpus.length < 5) { alert('Necesito más texto: pega al menos unas decenas de oraciones.'); return; }
+  const ds = buildDataset(corpus, { minCount: S.params.minCount });
+  if (ds.words.length < 8 || ds.idSents.length < 3) { alert('El vocabulario resultante es muy pequeño. Baja la frecuencia mínima o agrega más texto.'); return; }
+  S.ds = ds;
+  S.w2v = new Word2Vec(ds, { ...S.params });
+  S.wordCat = new Map();
+  if (S.source === 'builtin') CATEGORIES.forEach((c, ci) => c.words.forEach(w => { if (ds.word2id.has(w)) S.wordCat.set(ds.word2id.get(w), ci); }));
+  S.sel = -1; S.isolated = null; S.analogy = null; S.analogyIso = false; S.prevComps = null; S.kmeans = null; S.searchHits = new Set();
+  S.cur = new Map(); S.tgt = new Map();
+  refreshVectors(); computePool(); fillVocabList(); updateStats(); buildLegend(); renderInspector(); renderAnalogy([]);
+  S.training = true; S.stopReq = false;
+  $('btnTrain').disabled = true; $('btnStop').disabled = false;
+  $('trainBanner').style.display = 'flex';
+  const wantMethod = S.method;
+  if (S.method === 'tsne') setMethod('pca', true);
+  project();
+  let lastProj = performance.now();
+  const tick = () => {
+    const w = S.w2v; if (!w || w !== S.w2v) return;
+    const t0 = performance.now(); let closed = false;
+    while (performance.now() - t0 < 24 && !w.finished && !S.stopReq) closed = w.trainSentences(25) || closed;
+    const now = performance.now();
+    if ($('animTrain').checked && (closed || now - lastProj > 300)) { refreshVectors(); project(); lastProj = now; if (S.sel >= 0) renderInspector(); }
+    updateTrainUI();
+    if (w.finished || S.stopReq) finishTraining(wantMethod);
+    else requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function finishTraining(wantMethod) {
+  S.training = false;
+  $('btnTrain').disabled = false; $('btnStop').disabled = true;
+  $('trainBanner').style.display = 'none';
+  refreshVectors();
+  S.kmeans = null; if (S.colorBy === 'kmeans') computeKmeans();
+  updateTrainUI();
+  if (wantMethod !== S.method) setMethod(wantMethod); else project();
+  renderInspector(); renderStep();
+  if (S.source === 'builtin' && !S.analogy) runAnalogy(true);
+}
+
+function refreshVectors() {
+  S.vecs = S.w2v.vectors();
+  S.nvecs = S.vecs.map(v => { const n = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1; return v.map(x => x / n); });
+}
+
+function computePool() {
+  const V = S.ds.words.length, out = [];
+  for (let i = 0; i < V; i++) if (S.source === 'custom' || S.showCtx || S.wordCat.has(i)) out.push(i);
+  S.pool = out;
+  S.active = S.isolated ? out.filter(i => S.isolated.has(i)) : out;
+  $('isoGroup').style.display = S.isolated ? 'flex' : 'none';
+}
+
+function computeKmeans() {
+  const k = S.source === 'builtin' ? CATEGORIES.length : Math.max(2, Math.min(10, Math.round(Math.sqrt(S.pool.length / 2))));
+  const a = kmeans(S.pool.map(i => S.nvecs[i]), k, 11);
+  S.kmeans = new Map(S.pool.map((i, j) => [i, a[j]]));
+}
+
+function updateStats() {
+  $('stSent').textContent = fmt(S.ds.sentences.length);
+  $('stTok').textContent = fmt(S.ds.totalTokens);
+  $('stVocab').textContent = fmt(S.ds.words.length);
+  $('stDim').textContent = S.params.dim;
+  $('hdrModel').innerHTML = `Word2Vec · Skip-gram · <b>${fmt(S.ds.words.length)}</b> palabras × <b>${S.params.dim}</b> dim`;
+  $('vecDim').textContent = S.params.dim + ' dimensiones';
+}
+
+function updateTrainUI() {
+  const w = S.w2v; if (!w) return;
+  const pct = Math.min(100, 100 * w.done / w.totalSteps);
+  $('prog').style.width = pct + '%';
+  const ep = Math.min(w.epoch + (w.finished ? 0 : 1), w.p.epochs);
+  $('tmEpoch').textContent = `Época ${ep} / ${w.p.epochs}`;
+  const L = w.finished ? w.lossHist[w.lossHist.length - 1] : w.currentLoss();
+  $('tmLoss').textContent = 'pérdida ' + (L ? L.toFixed(3) : '–');
+  $('tbText').innerHTML = `Entrenando Word2Vec · época <b>${ep}/${w.p.epochs}</b> · pérdida <b>${L ? L.toFixed(3) : '–'}</b> · ${pct.toFixed(0)}%`;
+  drawLoss($('lossSpark'), true);
+  if (S.step === 4) drawLoss($('lossBig'), false);
+}
+
+function drawLoss(cv, mini) {
+  if (!cv || !S.w2v) return;
+  const dpr = devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  const g = cv.getContext('2d'); g.scale(dpr, dpr); g.clearRect(0, 0, W, H);
+  const pts = S.w2v.lossHist.slice(); if (!S.w2v.finished && S.w2v._lossN) pts.push(S.w2v.currentLoss());
+  const padL = mini ? 6 : 44, padR = mini ? 6 : 14, padT = mini ? 8 : 14, padB = mini ? 8 : 28;
+  const n = Math.max(S.w2v.p.epochs, 2);
+  if (!pts.length) { g.fillStyle = '#9aa2b1'; g.font = '11px Segoe UI'; g.fillText('La curva de pérdida aparecerá aquí', padL + 4, H / 2 + 4); return; }
+  const mx = Math.max(...pts) * 1.05, mn = 0;
+  const X = i => padL + (W - padL - padR) * (i / (n - 1)), Y = v => padT + (H - padT - padB) * (1 - (v - mn) / (mx - mn));
+  if (!mini) {
+    g.strokeStyle = '#e3e7ee'; g.fillStyle = '#6b7385'; g.font = '10.5px Segoe UI'; g.lineWidth = 1;
+    for (let t = 0; t <= 4; t++) { const v = mx * t / 4, y = Y(v); g.beginPath(); g.moveTo(padL, y); g.lineTo(W - padR, y); g.stroke(); g.fillText(v.toFixed(2), 6, y + 3); }
+    for (let i = 0; i < n; i += Math.ceil(n / 10)) g.fillText(i + 1, X(i) - 3, H - 10);
+    g.fillText('época →', W - 60, H - 10);
+  }
+  g.beginPath(); pts.forEach((v, i) => i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v)));
+  g.lineTo(X(pts.length - 1), Y(0)); g.lineTo(X(0), Y(0)); g.closePath();
+  const gr = g.createLinearGradient(0, padT, 0, H); gr.addColorStop(0, 'rgba(26,115,232,.25)'); gr.addColorStop(1, 'rgba(26,115,232,0)');
+  g.fillStyle = gr; g.fill();
+  g.beginPath(); pts.forEach((v, i) => i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v)));
+  g.strokeStyle = '#1a73e8'; g.lineWidth = 2; g.stroke();
+  pts.forEach((v, i) => { g.beginPath(); g.arc(X(i), Y(v), mini ? 1.8 : 3, 0, 7); g.fillStyle = '#fff'; g.fill(); g.strokeStyle = '#1a73e8'; g.lineWidth = 1.5; g.stroke(); });
+}
+
+// ---------------------- proyección ----------------------
+function project() {
+  if (!S.ds || !S.active.length) return;
+  const ids = S.active, X = ids.map(vec);
+  let P;
+  if (S.method === 'pca' || S.method === 'tsne' && !S.tsne) {
+    const nc = Math.min(10, X[0].length, Math.max(3, X.length - 1));
+    const r = pca(X, nc);
+    if (S.prevComps && S.prevComps.length === r.comps.length && S.prevComps[0].length === r.comps[0].length) {
+      r.comps.forEach((c, k) => {
+        const d = c.reduce((s, x, j) => s + x * S.prevComps[k][j], 0);
+        if (d < 0) { r.comps[k] = c.map(x => -x); r.proj.forEach(p => p[k] = -p[k]); }
+      });
+    }
+    S.prevComps = r.comps; S.pcaRes = r;
+    fillPcSelects(); renderVarBars();
+    const [a, b, c] = S.pcaAxes;
+    P = r.proj.map(p => [p[a] || 0, p[b] || 0, S.view3D ? (p[c] || 0) : 0]);
+  } else if (S.method === 'tsne') {
+    P = S.tsne.positions().map(p => [p[0], p[1], S.view3D ? (p[2] || 0) : 0]);
+  } else {
+    P = customProjection(ids);
+  }
+  setTargets(ids, P);
+  updateStatus();
+}
+
+function setTargets(ids, P) {
+  // centrar y escalar a radio ~1
+  const n = P.length, m = [0, 0, 0];
+  P.forEach(p => { m[0] += p[0] / n; m[1] += p[1] / n; m[2] += p[2] / n; });
+  const r = P.map(p => Math.hypot(p[0] - m[0], p[1] - m[1], p[2] - m[2])).sort((a, b) => a - b);
+  const sc = 1 / (r[Math.floor(r.length * 0.97)] || r[r.length - 1] || 1);
+  S.tgt = new Map();
+  ids.forEach((id, k) => {
+    const p = P[k], t = [(p[0] - m[0]) * sc, (p[1] - m[1]) * sc, (p[2] - m[2]) * sc];
+    S.tgt.set(id, t);
+    if (!S.cur.has(id)) S.cur.set(id, [t[0] * 0.05, t[1] * 0.05, t[2] * 0.05]);
+  });
+}
+
+function customProjection(ids) {
+  const get = el => { const w = el.value.trim().toLowerCase(); const ok = S.ds.word2id.has(w); el.classList.toggle('bad', !!w && !ok); return ok ? vec(S.ds.word2id.get(w)) : null; };
+  const xl = get($('cxL')), xr = get($('cxR')), yl = get($('cyL')), yr = get($('cyR'));
+  const dir = (l, r) => { if (!l || !r) return null; const d = r.map((x, i) => x - l[i]); const n = Math.hypot(...d) || 1; return d.map(x => x / n); };
+  const dx = dir(xl, xr), dy = dir(yl, yr);
+  const fallback = S.pcaRes || pca(ids.map(vec), 3);
+  return ids.map((id, k) => {
+    const v = vec(id);
+    const x = dx ? v.reduce((s, a, i) => s + a * dx[i], 0) : fallback.proj[k] ? fallback.proj[k][0] : 0;
+    const y = dy ? v.reduce((s, a, i) => s + a * dy[i], 0) : fallback.proj[k] ? fallback.proj[k][1] : 0;
+    return [x, y, 0];
+  });
+}
+
+function fillPcSelects() {
+  const r = S.pcaRes; if (!r) return;
+  ['pcX', 'pcY', 'pcZ'].forEach((id, k) => {
+    const el = $(id);
+    if (el.options.length !== r.explained.length) {
+      el.innerHTML = r.explained.map((e, i) => `<option value="${i}">PC ${i + 1}</option>`).join('');
+    }
+    [...el.options].forEach((o, i) => o.title = `${(r.explained[i] * 100).toFixed(1)}% de varianza`);
+    el.value = S.pcaAxes[k];
+  });
+}
+
+function renderVarBars() {
+  const r = S.pcaRes; if (!r) return;
+  const used = S.view3D ? S.pcaAxes : S.pcaAxes.slice(0, 2);
+  const tot = used.reduce((s, i) => s + (r.explained[i] || 0), 0);
+  let h = `<div class="vbar"><div class="t"><span>Varianza explicada (${used.length} comp.)</span><b style="color:var(--text)">${(tot * 100).toFixed(1)}%</b></div></div>`;
+  r.explained.slice(0, 6).forEach((e, i) => {
+    const on = used.includes(i);
+    h += `<div class="vbar"><div class="t"><span style="${on ? 'color:var(--text);font-weight:600' : ''}">PC ${i + 1}</span><span>${(e * 100).toFixed(1)}%</span></div><div class="b"><div style="width:${Math.min(100, e * 100 / r.explained[0] * 100)}%;${on ? '' : 'background:#b9c6dc'}"></div></div></div>`;
+  });
+  $('varBars').innerHTML = h;
+}
+
+function setMethod(m, silent) {
+  S.method = m;
+  document.querySelectorAll('#methodTabs .tab').forEach(t => t.classList.toggle('on', t.dataset.m === m));
+  $('mPca').style.display = m === 'pca' ? '' : 'none';
+  $('mTsne').style.display = m === 'tsne' ? '' : 'none';
+  $('mCustom').style.display = m === 'custom' ? '' : 'none';
+  if (m !== 'tsne') stopTsne();
+  if (m === 'custom') setView(false, true);
+  if (m === 'tsne' && !silent && !S.training) { startTsne(); return; }
+  project();
+}
+
+// ---------------------- t-SNE ----------------------
+function startTsne() {
+  if (!S.ds) return;
+  S.tsne = new TSNE(S.active.map(vec), { dim: S.view3D ? 3 : 2, perplexity: S.tsnePerp, lr: S.tsneLr, seed: 3 });
+  S.tsneRunning = true;
+  $('tRun').textContent = 'Pausar'; $('tState').textContent = 'optimizando…';
+  const ids = S.active.slice();
+  const loop = () => {
+    if (!S.tsneRunning || !S.tsne || S.method !== 'tsne') return;
+    for (let i = 0; i < 3; i++) S.tsne.step();
+    if (ids.length === S.active.length) { setTargets(ids, S.tsne.positions().map(p => [p[0], p[1], p[2] || 0])); }
+    $('tIter').textContent = S.tsne.iter;
+    updateStatus();
+    if (S.tsne.iter >= 750) { S.tsneRunning = false; $('tRun').textContent = 'Continuar'; $('tState').textContent = 'convergió ✓'; return; }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
+function stopTsne() { S.tsneRunning = false; }
+
+// ---------------------- render 3D (canvas 2D) ----------------------
+const cv = $('cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, dpr = 1;
+function resize() {
+  dpr = devicePixelRatio || 1; W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+}
+new ResizeObserver(resize).observe(cv);
+
+function projectPoint(p) {
+  const { yaw, pitch, zoom, panX, panY } = S.cam;
+  let x = p[0], y = p[1], z = p[2];
+  if (S.view3D) {
+    const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const x1 = x * cy + z * sy, z1 = -x * sy + z * cy;
+    const y1 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+    x = x1; y = y1; z = z2;
+  } else z = 0;
+  const camD = 3.4, f = S.view3D ? camD / (camD - z) : 1;
+  const base = Math.min(W, H) * 0.40 * zoom;
+  return { x: W / 2 + panX + x * f * base, y: H / 2 + panY - y * f * base, z, f };
+}
+
+const labelW = new Map();
+function measure(t) { let w = labelW.get(t); if (w === undefined) { w = ctx.measureText(t).width; labelW.set(t, w); } return w; }
+
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  if (!S.ds) return;
+  // ejes / grilla
+  if (S.showAxes) drawAxes();
+  const focus = new Set();
+  if (S.sel >= 0) { focus.add(S.sel); S.neighbors.forEach(n => focus.add(n.i)); }
+  if (S.analogy) { S.analogy.ids.forEach(i => focus.add(i)); S.analogy.res.slice(0, 1).forEach(r => focus.add(r.i)); }
+  const hasFocus = focus.size > 0, hasSearch = S.searchHits.size > 0;
+  const items = [];
+  for (const id of S.active) {
+    if (!visible(id)) continue;
+    const p = S.cur.get(id); if (!p) continue;
+    const s = projectPoint(p);
+    items.push({ id, ...s });
+  }
+  items.sort((a, b) => a.z - b.z);
+  // líneas de vecinos
+  if (S.sel >= 0 && S.cur.has(S.sel)) {
+    const a = projectPoint(S.cur.get(S.sel));
+    ctx.lineWidth = 1.2;
+    S.neighbors.forEach((n, k) => {
+      const q = S.cur.get(n.i); if (!q || !S.tgt.has(n.i)) return;
+      const b = projectPoint(q);
+      ctx.strokeStyle = `rgba(26,115,232,${0.55 - 0.35 * k / Math.max(1, S.neighbors.length)})`;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    });
+  }
+  if (S.analogy) drawAnalogyArrows();
+  // puntos
+  const zs = items.map(i => i.z), zmin = Math.min(...zs, 0), zmax = Math.max(...zs, 0.0001);
+  S.screen = [];
+  for (const it of items) {
+    const isSel = it.id === S.sel, isHov = it.id === S.hover || it.id === S.hoverList;
+    const inFocus = !hasFocus || focus.has(it.id);
+    const isHit = hasSearch && S.searchHits.has(it.id);
+    const depth = S.view3D ? (it.z - zmin) / (zmax - zmin || 1) : 1;
+    const ctxWord = catOf(it.id) < 0 && S.source === 'builtin';
+    let r = (ctxWord ? 3.2 : 5.2) * Math.max(0.6, it.f) * Math.min(1.6, Math.max(0.8, Math.sqrt(S.cam.zoom)));
+    if (isSel) r += 3; else if (isHov || (hasFocus && inFocus)) r += 1.2;
+    let alpha = (0.45 + 0.55 * depth);
+    if (hasFocus && !inFocus) alpha *= 0.13;
+    if (hasSearch && !isHit && !hasFocus) alpha *= 0.18;
+    const col = colorOf(it.id);
+    ctx.beginPath(); ctx.arc(it.x, it.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = hexA(col, alpha); ctx.fill();
+    if (alpha > 0.3) { ctx.lineWidth = 1; ctx.strokeStyle = `rgba(255,255,255,${0.9 * alpha})`; ctx.stroke(); }
+    if (isSel || isHit) {
+      ctx.beginPath(); ctx.arc(it.x, it.y, r + 3.5, 0, Math.PI * 2);
+      ctx.strokeStyle = isSel ? '#1a73e8' : '#0b8bd6'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    S.screen.push({ id: it.id, x: it.x, y: it.y, r, z: it.z });
+  }
+  drawLabels(items, focus, hasFocus);
+}
+
+function drawLabels(items, focus, hasFocus) {
+  ctx.font = '600 11.5px Segoe UI, Roboto, sans-serif';
+  ctx.textBaseline = 'middle';
+  const boxes = [];
+  const want = [];
+  const anaSet = S.analogy ? new Set([...S.analogy.ids, S.analogy.res[0] && S.analogy.res[0].i]) : null;
+  const prio = id => id === S.sel ? 0 : (id === S.hover || id === S.hoverList) ? 0 : (anaSet && anaSet.has(id)) ? 0 : focus.has(id) ? 1 : S.searchHits.has(id) ? 2 : 3;
+  const list = items.slice().reverse(); // de frente a fondo
+  for (const it of list) {
+    const p = prio(it.id);
+    if (p === 3 && (!S.labelsAll || hasFocus)) continue;
+    if (p === 2 && S.searchHits.size > 60) continue;
+    want.push({ it, p });
+  }
+  want.sort((a, b) => a.p - b.p);
+  for (const { it, p } of want) {
+    const t = S.ds.words[it.id], w = measure(t) + 10, h = 17;
+    const x = it.x + 8, y = it.y - h / 2;
+    if (p >= 1 && boxes.some(b => x < b.x + b.w && x + w > b.x && y < b.y + b.h && y + h > b.y)) continue;
+    boxes.push({ x, y, w, h });
+    const strong = p <= 1;
+    ctx.fillStyle = p === 0 ? 'rgba(29,36,51,.92)' : strong ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.78)';
+    roundRect(x, y, w, h, 5); ctx.fill();
+    if (p !== 0) { ctx.strokeStyle = strong ? hexA(colorOf(it.id), .7) : 'rgba(0,0,0,.08)'; ctx.lineWidth = 1; ctx.stroke(); }
+    ctx.fillStyle = p === 0 ? '#fff' : strong ? '#1d2433' : '#4b5466';
+    ctx.fillText(t, x + 5, it.y + 0.5);
+  }
+}
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+function axisNames() {
+  if (S.method === 'pca') return S.pcaAxes.map(i => 'PC' + (i + 1));
+  if (S.method === 'custom') return [`${$('cxL').value} → ${$('cxR').value}`, `${$('cyL').value} → ${$('cyR').value}`, ''];
+  return ['t-SNE 1', 't-SNE 2', 't-SNE 3'];
+}
+function drawAxes() {
+  const names = axisNames();
+  const o = projectPoint([0, 0, 0]);
+  if (!S.view3D) {
+    // grilla suave
+    ctx.strokeStyle = 'rgba(29,36,51,.05)'; ctx.lineWidth = 1;
+    const base = Math.min(W, H) * 0.40 * S.cam.zoom, step = base / 4;
+    if (step > 6) {
+      for (let x = o.x % step; x < W; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+      for (let y = o.y % step; y < H; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    }
+  }
+  const axes = S.view3D ? [[1.15, 0, 0], [0, 1.15, 0], [0, 0, 1.15]] : [[1.15, 0, 0], [0, 1.15, 0]];
+  const cols = ['#e8554e', '#35a853', '#2f74d0'];
+  ctx.font = '600 10.5px Segoe UI, sans-serif'; ctx.textBaseline = 'middle';
+  axes.forEach((a, k) => {
+    const neg = projectPoint(a.map(v => -v)), pos = projectPoint(a);
+    ctx.strokeStyle = hexA(cols[k], .35); ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(neg.x, neg.y); ctx.lineTo(pos.x, pos.y); ctx.stroke(); ctx.setLineDash([]);
+    const nm = names[k] || '', tw = ctx.measureText(nm).width;
+    let lx = pos.x + 5, ly = pos.y;
+    if (lx + tw > W - 8) { lx = W - 8 - tw; ly = pos.y - 11; }
+    if (ly < 10) { ly = 10; lx = pos.x + 6; }
+    ctx.fillStyle = hexA(cols[k], .9); ctx.fillText(nm, lx, ly);
+  });
+}
+
+function drawAnalogyArrows() {
+  const A = S.analogy; if (!A.res.length) return;
+  const [ia, ib, ic] = A.ids, ir = A.res[0].i;
+  const P = i => S.cur.has(i) && S.tgt.has(i) ? projectPoint(S.cur.get(i)) : null;
+  const arrow = (p, q, col) => {
+    if (!p || !q) return;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); ctx.setLineDash([]);
+    const ang = Math.atan2(q.y - p.y, q.x - p.x), L = 10;
+    ctx.beginPath(); ctx.moveTo(q.x - Math.cos(ang) * 7, q.y - Math.sin(ang) * 7);
+    ctx.lineTo(q.x - Math.cos(ang - .4) * (L + 7), q.y - Math.sin(ang - .4) * (L + 7));
+    ctx.lineTo(q.x - Math.cos(ang + .4) * (L + 7), q.y - Math.sin(ang + .4) * (L + 7)); ctx.closePath(); ctx.fill();
+  };
+  arrow(P(ib), P(ia), 'rgba(11,139,214,.85)');
+  arrow(P(ic), P(ir), 'rgba(26,115,232,.9)');
+}
+
+let lastT = performance.now();
+function frame(t) {
+  const dt = Math.min(50, t - lastT); lastT = t;
+  if (S.autoRotate && S.view3D && !drag) S.cam.yaw += dt * 0.00025;
+  // interpolación suave hacia los objetivos
+  const k = 1 - Math.pow(0.86, dt / 16);
+  for (const [id, t3] of S.tgt) {
+    const c = S.cur.get(id); if (!c) continue;
+    c[0] += (t3[0] - c[0]) * k; c[1] += (t3[1] - c[1]) * k; c[2] += (t3[2] - c[2]) * k;
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+
+// ---------------------- interacción canvas ----------------------
+let drag = null;
+cv.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('mousedown', e => {
+  drag = { x: e.clientX, y: e.clientY, moved: 0, pan: e.shiftKey || e.button === 2 || !S.view3D };
+  cv.classList.add('drag');
+});
+window.addEventListener('mouseup', e => {
+  if (!drag) return;
+  const wasClick = drag.moved < 4; drag = null; cv.classList.remove('drag');
+  if (wasClick && e.target === cv) { const h = hit(e); select(h); }
+});
+cv.addEventListener('mousemove', e => {
+  if (drag) {
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+    drag.moved += Math.abs(dx) + Math.abs(dy);
+    if (drag.pan) { S.cam.panX += dx; S.cam.panY += dy; }
+    else { S.cam.yaw += dx * 0.008; S.cam.pitch = Math.max(-1.5, Math.min(1.5, S.cam.pitch + dy * 0.008)); }
+    $('tip').style.display = 'none';
+    return;
+  }
+  const h = hit(e);
+  if (h !== S.hover) { S.hover = h; cv.classList.toggle('pt', h >= 0); }
+  showTip(h, e);
+});
+cv.addEventListener('mouseleave', () => { S.hover = -1; $('tip').style.display = 'none'; });
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = cv.getBoundingClientRect(), mx = e.clientX - r.left - W / 2 - S.cam.panX, my = e.clientY - r.top - H / 2 - S.cam.panY;
+  const f = Math.exp(-e.deltaY * 0.0012), nz = Math.max(0.2, Math.min(25, S.cam.zoom * f)), ff = nz / S.cam.zoom;
+  S.cam.panX -= mx * (ff - 1); S.cam.panY -= my * (ff - 1); S.cam.zoom = nz;
+}, { passive: false });
+cv.addEventListener('dblclick', () => fitView());
+
+function hit(e) {
+  const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  let best = -1, bd = Infinity;
+  for (let k = S.screen.length - 1; k >= 0; k--) {
+    const s = S.screen[k], d = Math.hypot(s.x - x, s.y - y);
+    if (d < s.r + 5 && d < bd) { bd = d; best = s.id; }
+  }
+  return best;
+}
+function showTip(id, e) {
+  const tip = $('tip');
+  if (id < 0) { tip.style.display = 'none'; return; }
+  const r = $('stage').getBoundingClientRect();
+  const v = S.vecs[id];
+  tip.innerHTML = `<div class="w">${esc(S.ds.words[id])}</div><div class="c"><i style="background:${colorOf(id)}"></i>${catName(id)} · id ${id} · frec. ${S.ds.counts[id]}</div><div class="m">[${v.slice(0, 4).map(x => x.toFixed(3)).join(', ')}, …]</div>`;
+  tip.style.display = 'block';
+  let x = e.clientX - r.left + 14, y = e.clientY - r.top + 14;
+  if (x + 220 > r.width) x -= 240;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+
+function fitView() { S.cam = { yaw: S.view3D ? -0.55 : 0, pitch: S.view3D ? 0.38 : 0, zoom: 1, panX: 0, panY: 0 }; }
+function setView(is3D, silent) {
+  S.view3D = is3D;
+  $('b3d').classList.toggle('on', is3D); $('b2d').classList.toggle('on', !is3D);
+  $('pcZwrap').style.visibility = is3D ? 'visible' : 'hidden';
+  fitView();
+  if (silent) return;
+  if (S.method === 'tsne') startTsne(); else project();
+}
+
+// ---------------------- selección / inspector ----------------------
+function select(id) {
+  S.sel = id;
+  computeNeighbors();
+  renderInspector();
+  if (S.step === 5) renderStep();
+}
+function computeNeighbors() {
+  if (S.sel < 0) { S.neighbors = []; return; }
+  const pool = S.pool;
+  const q = vec(S.sel);
+  const res = [];
+  for (const i of pool) {
+    if (i === S.sel) continue;
+    const v = vec(i);
+    const d = S.metric === 'cos' ? 1 - cosineSim(q, v) : Math.sqrt(v.reduce((s, x, k) => s + (x - q[k]) ** 2, 0));
+    res.push({ i, d });
+  }
+  res.sort((a, b) => a.d - b.d);
+  S.neighbors = res.slice(0, S.k);
+}
+
+function renderInspector() {
+  const has = S.ds && S.sel >= 0;
+  $('bClear').style.display = has ? '' : 'none';
+  $('nbSec').style.display = has ? '' : 'none';
+  $('vecSec').style.display = has ? '' : 'none';
+  if (!has) { $('selCard').innerHTML = '<div class="empty">Haz clic en un punto o búscalo<br>para ver sus vecinos y su vector.</div>'; return; }
+  computeNeighbors();
+  const id = S.sel, v = S.vecs[id], col = colorOf(id);
+  const norm = Math.hypot(...v);
+  $('selCard').innerHTML = `<div class="card"><div class="word">${esc(S.ds.words[id])}</div>
+    <span class="pill" style="background:${hexA(col, .12)};color:${col === CONTEXT_COLOR ? '#6b7385' : col}"><i style="width:7px;height:7px;border-radius:50%;background:${col};display:inline-block"></i>${catName(id)}</span>
+    <div class="kv"><div><span>Token ID</span><b>${id}</b></div><div><span>Frecuencia</span><b>${S.ds.counts[id]}</b></div><div><span>Norma L2</span><b>${norm.toFixed(3)}</b></div></div></div>`;
+  const maxD = Math.max(...S.neighbors.map(n => n.d), 1e-9);
+  $('nbList').innerHTML = S.neighbors.map((n, k) => {
+    const sim = S.metric === 'cos' ? 1 - n.d : null;
+    const w = S.metric === 'cos' ? Math.max(4, sim * 100) : Math.max(4, (1 - n.d / (maxD * 1.15)) * 100);
+    return `<div class="nb" data-id="${n.i}"><span class="r">${k + 1}</span><span class="n"><i style="background:${colorOf(n.i)}"></i>${esc(S.ds.words[n.i])}</span><div class="bar"><div style="width:${w}%"></div></div><span class="d" title="${S.metric === 'cos' ? 'similitud coseno' : 'distancia euclidiana'}">${S.metric === 'cos' ? sim.toFixed(3) : n.d.toFixed(3)}</span></div>`;
+  }).join('');
+  $('nbList').querySelectorAll('.nb').forEach(el => {
+    el.onclick = () => select(+el.dataset.id);
+    el.onmouseenter = () => S.hoverList = +el.dataset.id;
+    el.onmouseleave = () => S.hoverList = -1;
+  });
+  $('bIso').textContent = `Aislar ${S.neighbors.length + 1} puntos y reproyectar`;
+  // vector heatmap
+  const mx = Math.max(...v.map(Math.abs)) || 1;
+  $('heat').style.gridTemplateColumns = `repeat(${v.length > 60 ? 12 : 10},1fr)`;
+  $('heat').innerHTML = v.map((x, d) => `<div title="d${d} = ${x.toFixed(4)}" style="background:${divColor(x / mx)}"></div>`).join('');
+  $('vecnums').innerHTML = '[' + v.map(x => `<span class="${x >= 0 ? 'p' : 'n'}">${x >= 0 ? ' ' : ''}${x.toFixed(4)}</span>`).join(', ') + ']';
+}
+function divColor(t) {
+  t = Math.max(-1, Math.min(1, t));
+  const W3 = [255, 255, 255], P = [217, 48, 37], N = [29, 78, 216];
+  const e = t > 0 ? P : N, a = Math.pow(Math.abs(t), 0.8);
+  return `rgb(${W3.map((w, k) => Math.round(w + (e[k] - w) * a)).join(',')})`;
+}
+
+// búsqueda
+function doSearch() {
+  const q = $('q').value.trim().toLowerCase();
+  S.searchHits = new Set();
+  if (!q || !S.ds) { $('results').innerHTML = ''; return; }
+  let re; try { re = new RegExp(q); } catch { re = null; }
+  const hits = S.pool.filter(i => re ? re.test(S.ds.words[i]) : S.ds.words[i].includes(q));
+  hits.sort((a, b) => (S.ds.words[a].startsWith(q) ? 0 : 1) - (S.ds.words[b].startsWith(q) ? 0 : 1) || S.ds.counts[b] - S.ds.counts[a]);
+  hits.forEach(i => S.searchHits.add(i));
+  $('results').innerHTML = `<div class="hint" style="margin:6px 2px 4px">${hits.length} coincidencia${hits.length === 1 ? '' : 's'}</div>` + hits.slice(0, 60).map(i => {
+    const w = esc(S.ds.words[i]); const hl = re ? w : w.replace(q, `<mark>${esc(q)}</mark>`);
+    return `<div class="res" data-id="${i}"><span class="dot" style="background:${colorOf(i)}"></span>${hl}<span class="f">${catName(i)}</span></div>`;
+  }).join('');
+  $('results').querySelectorAll('.res').forEach(el => el.onclick = () => select(+el.dataset.id));
+}
+
+// analogías
+const PRESETS = [['rey', 'hombre', 'mujer'], ['padre', 'hombre', 'mujer'], ['lima', 'perú', 'francia'], ['madrid', 'españa', 'japón'], ['roma', 'italia', 'alemania'], ['príncipe', 'niño', 'niña']];
+function runAnalogy(silent) {
+  if (!S.ds) return;
+  const words = ['aA', 'aB', 'aC'].map(id => $(id).value.trim().toLowerCase());
+  const ids = words.map(w => S.ds.word2id.has(w) ? S.ds.word2id.get(w) : -1);
+  ['aA', 'aB', 'aC'].forEach((id, k) => $(id).classList.toggle('bad', ids[k] < 0));
+  if (ids.some(i => i < 0)) { renderAnalogy([], 'Alguna palabra no está en el vocabulario.'); return; }
+  const [a, b, c] = ids.map(i => S.nvecs[i]);
+  const q = a.map((x, d) => x - b[d] + c[d]);
+  const res = nearest(S.nvecs, q, 5, 'cos', new Set(ids)).map(r => ({ i: r.i, sim: 1 - r.d }));
+  S.analogy = silent ? null : { ids, res };
+  renderAnalogy(res, null, words);
+  if (!silent) {
+    const keep = new Set([...ids, ...res.map(r => r.i)]);
+    if (S.source === 'builtin') {
+      const cats = new Set([...ids, res[0].i].map(catOf).filter(c => c >= 0));
+      S.pool.forEach(i => { if (cats.has(catOf(i))) keep.add(i); });
+    } else [...keep].forEach(i => nearest(S.nvecs, S.nvecs[i], 4, 'cos').forEach(r => keep.add(r.i)));
+    S.isolated = keep; S.analogyIso = true; computePool(); S.prevComps = null; fitView();
+    if (S.method === 'tsne') setMethod('pca'); else project();
+  }
+}
+function renderAnalogy(res, err, words) {
+  if (err) { $('anaRes').innerHTML = `<div class="hint" style="color:#d93025">${err}</div>`; return; }
+  if (!res.length) { $('anaRes').innerHTML = ''; return; }
+  $('anaRes').innerHTML = `<div class="hint" style="margin-bottom:4px">v(${esc(words[0])}) − v(${esc(words[1])}) + v(${esc(words[2])}) ≈</div>` + res.map((r, k) =>
+    `<div class="nb" data-id="${r.i}"><span class="r">${k + 1}</span><span class="n" style="${k === 0 ? 'font-weight:700' : ''}"><i style="background:${colorOf(r.i)}"></i>${esc(S.ds.words[r.i])}</span><div class="bar"><div style="width:${Math.max(4, r.sim * 100)}%"></div></div><span class="d">${r.sim.toFixed(3)}</span></div>`).join('');
+  $('anaRes').querySelectorAll('.nb').forEach(el => el.onclick = () => select(+el.dataset.id));
+}
+
+// ---------------------- leyenda / estado ----------------------
+function buildLegend() {
+  const el = $('legend');
+  if (S.colorBy !== 'cat' || S.source === 'custom') {
+    el.innerHTML = S.colorBy === 'freq' ? `<div class="hint">Azul claro = poco frecuente · azul oscuro = muy frecuente</div>` :
+      S.colorBy === 'kmeans' ? `<div class="hint">k-means (coseno) agrupa los vectores <b>sin conocer</b> las categorías. Compara con «Categoría semántica».</div>` :
+      `<div class="hint">Texto propio: usa «Clusters k-means» para colorear grupos descubiertos.</div>`;
+    return;
+  }
+  const counts = CATEGORIES.map(() => 0); let ctxN = 0;
+  S.pool.forEach(i => { const c = catOf(i); c >= 0 ? counts[c]++ : ctxN++; });
+  el.innerHTML = CATEGORIES.map((c, i) => `<div class="lg ${S.hiddenCats.has(i) ? 'off' : ''}" data-c="${i}"><span class="dot" style="background:${c.color}"></span>${c.name}<span class="cnt">${counts[i]}</span></div>`).join('') +
+    (S.showCtx ? `<div class="lg ${S.hiddenCats.has(-1) ? 'off' : ''}" data-c="-1"><span class="dot" style="background:${CONTEXT_COLOR}"></span>Palabras de contexto<span class="cnt">${ctxN}</span></div>` : '');
+  el.querySelectorAll('.lg').forEach(d => d.onclick = () => { const c = +d.dataset.c; S.hiddenCats.has(c) ? S.hiddenCats.delete(c) : S.hiddenCats.add(c); buildLegend(); });
+}
+function updateStatus() {
+  if (!S.ds) return;
+  let m = S.method === 'pca' ? 'PCA' : S.method === 'tsne' ? `t-SNE · iter ${S.tsne ? S.tsne.iter : 0}` : 'Proyección personalizada';
+  let extra = '';
+  if (S.method === 'pca' && S.pcaRes) { const used = S.view3D ? S.pcaAxes : S.pcaAxes.slice(0, 2); extra = ` · varianza <b>${(used.reduce((s, i) => s + (S.pcaRes.explained[i] || 0), 0) * 100).toFixed(1)}%</b>`; }
+  $('status').innerHTML = `<b>${S.active.length}</b> puntos · <b>${S.params.dim}D → ${S.view3D && S.method !== 'custom' ? '3D' : '2D'}</b> · ${m}${extra}`;
+  $('projDim').textContent = `${S.params.dim}D → ${S.view3D && S.method !== 'custom' ? 3 : 2}D`;
+}
+function fillVocabList() { $('vocabList').innerHTML = S.ds.words.map(w => `<option value="${esc(w)}">`).join(''); }
+
+// ---------------------- PIPELINE (drawer) ----------------------
+const STEPS = ['Corpus', 'Tokenización', 'Vocabulario', 'Pares skip-gram', 'Entrenamiento', 'Matriz de embedding', 'Proyección'];
+function buildSteps() {
+  const el = $('steps');
+  el.innerHTML = '<span class="ttl">Proceso de embedding</span>' + STEPS.map((s, i) => (i ? '<span class="arrow">›</span>' : '') + `<button class="step" data-s="${i}"><span class="n">${i + 1}</span>${s}</button>`).join('') +
+    `<button class="collapse" id="dToggle" title="Mostrar / ocultar">▴</button>`;
+  el.querySelectorAll('.step').forEach(b => b.onclick = () => openStep(+b.dataset.s));
+  $('dToggle').onclick = () => openStep(S.step === null ? 0 : null);
+}
+function openStep(i) {
+  S.step = (i === S.step) ? null : i;
+  $('drawer').classList.toggle('open', S.step !== null);
+  $('dToggle').textContent = S.step === null ? '▴' : '▾';
+  document.querySelectorAll('.step').forEach(b => b.classList.toggle('on', +b.dataset.s === S.step));
+  renderStep();
+}
+function demoSentence() {
+  const ds = S.ds; if (!ds) return null;
+  let k = S.demoSent % ds.sentences.length, tries = 0;
+  while (tries++ < 50 && tokenize(ds.sentences[k]).length < 5) k = (k + 1) % ds.sentences.length;
+  return k;
+}
+function renderStep() {
+  const P = $('dpad'); if (S.step === null || !S.ds) { if (S.step !== null) P.innerHTML = '<div class="empty">Entrena un modelo primero.</div>'; return; }
+  const ds = S.ds, i = S.step;
+  const box = (title, text, right) => `<div class="dgrid"><div><h3>${title}</h3>${text}</div><div style="min-width:0;overflow:auto">${right}</div></div>`;
+  const k = demoSentence(), raw = ds.sentences[k], toks = tokenize(raw);
+  const kept = toks.filter(t => !STOPWORDS.has(t) && ds.word2id.has(t));
+  if (i === 0) {
+    P.innerHTML = box('1 · Corpus', `<p>El punto de partida es texto crudo. ${S.source === 'builtin' ? 'Este corpus en español se genera con plantillas: cada oración combina una palabra de una categoría (animales, frutas, países…) con contextos típicos de esa categoría. Así las palabras de una misma categoría <b>comparten contextos</b>, que es exactamente lo que Word2Vec aprovecha.' : 'Estás usando tu propio texto.'}</p>
+      <div class="formula">${fmt(ds.sentences.length)} oraciones · ${fmt(ds.rawTokens)} palabras crudas</div>
+      <p style="margin-top:10px"><i>«Conocerás una palabra por la compañía que mantiene»</i> — J. R. Firth (1957)</p>`,
+      `<div class="mini-h">Muestra del corpus</div><div class="sents">${ds.sentences.slice(0, 14).map((s, j) => `<div><span>${String(j + 1).padStart(2, '0')}</span>${esc(s)}</div>`).join('')}</div>`);
+  } else if (i === 1) {
+    P.innerHTML = box('2 · Tokenización', `<p>La oración se pasa a minúsculas, se quitan signos y se separa en <b>tokens</b>. Luego se eliminan las <b>stopwords</b> (palabras funcionales muy frecuentes que aportan poco significado) y cada token se reemplaza por su <b>ID numérico</b> del vocabulario.</p>
+      <button class="btn sm" id="nextSent" style="margin-top:10px">↻ Otra oración</button>`,
+      `<div class="mini-h">Texto original</div><div class="chips"><span class="chip" style="font-family:inherit">${esc(raw)}</span></div>
+       <div class="mini-h">Tokens (tachados = stopwords eliminadas)</div><div class="chips">${toks.map(t => `<span class="chip ${STOPWORDS.has(t) ? 'stop' : ''}">${esc(t)}</span>`).join('')}</div>
+       <div class="mini-h">Secuencia de IDs que entra al modelo</div><div class="chips">${kept.map(t => `<span class="chip id" title="${esc(t)}">${ds.word2id.get(t)}</span>`).join('')}<span class="chip" style="font-family:inherit;border-style:dashed">${kept.map(esc).join(' · ')}</span></div>`);
+    $('nextSent').onclick = () => { S.demoSent = Math.floor(Math.random() * ds.sentences.length); renderStep(); };
+  } else if (i === 2) {
+    let tot = 0; ds.counts.forEach(c => tot += Math.pow(c, 0.75));
+    const rows = ds.words.slice(0, 80).map((w, j) => `<tr><td class="m">${j}</td><td><b>${esc(w)}</b></td><td style="color:var(--muted)">${catName(j)}</td><td>${ds.counts[j]}</td><td style="width:30%"><div class="fbar" style="width:${100 * ds.counts[j] / ds.counts[0]}%"></div></td><td class="m">${(Math.pow(ds.counts[j], .75) / tot).toFixed(4)}</td></tr>`).join('');
+    P.innerHTML = box('3 · Vocabulario', `<p>Se cuentan las palabras y se descartan las que aparecen menos de <b>${S.params.minCount}</b> veces. Cada palabra recibe un ID (ordenado por frecuencia). Para el muestreo negativo se usa la distribución <b>unigrama<sup>0.75</sup></b>, que suaviza la ventaja de las palabras muy frecuentes.</p>
+      <div class="formula">|V| = ${ds.words.length} palabras<br>P<sub>neg</sub>(w) = f(w)<sup>0.75</sup> / Σ f(w')<sup>0.75</sup></div>`,
+      `<table class="t"><thead><tr><th>ID</th><th>Palabra</th><th>Tipo</th><th>Frec.</th><th></th><th>P<sub>neg</sub></th></tr></thead><tbody>${rows}</tbody></table>`);
+  } else if (i === 3) {
+    const win = S.params.window, ids = kept.map(t => ds.word2id.get(t));
+    const c = Math.min(Math.floor(kept.length / 2), kept.length - 1), rng = mulberry32(k + 1);
+    const ctxIdx = []; for (let j = Math.max(0, c - win); j <= Math.min(kept.length - 1, c + win); j++) if (j !== c) ctxIdx.push(j);
+    let pairs = '';
+    ctxIdx.forEach(j => {
+      pairs += `<div class="pair pos"><span><b>${esc(kept[c])}</b> → ${esc(kept[j])}</span><span>y=1</span></div>`;
+      for (let n = 0; n < Math.min(2, S.params.negative); n++) { const r = S.w2v.table[Math.floor(rng() * S.w2v.table.length)]; pairs += `<div class="pair neg"><span><b>${esc(kept[c])}</b> → ${esc(ds.words[r])}</span><span>y=0</span></div>`; }
+    });
+    P.innerHTML = box('4 · Pares skip-gram', `<p>Skip-gram intenta <b>predecir el contexto a partir de la palabra central</b>. Con ventana = ${win}, cada palabra a ≤ ${win} posiciones forma un par positivo (y=1). Además se muestrean <b>${S.params.negative} palabras al azar</b> por par como negativos (y=0).</p>
+      <div class="formula">P(y=1 | c, o) = σ(v<sub>c</sub> · u<sub>o</sub>)<br>σ(x) = 1 / (1 + e<sup>−x</sup>)</div>
+      <button class="btn sm" id="nextSent" style="margin-top:10px">↻ Otra oración</button>`,
+      `<div class="mini-h">Ventana alrededor de la palabra central</div><div class="chips">${kept.map((t, j) => `<span class="chip ${j === c ? 'c' : ctxIdx.includes(j) ? 'ctx' : ''}">${esc(t)} <small style="opacity:.6">${ids[j]}</small></span>`).join('')}</div>
+       <div class="mini-h">Ejemplos de entrenamiento generados (mostrando 2 negativos por par)</div><div class="pairs" style="margin-top:6px">${pairs}</div>`);
+    $('nextSent').onclick = () => { S.demoSent = Math.floor(Math.random() * ds.sentences.length); renderStep(); };
+  } else if (i === 4) {
+    const V = ds.words.length, D = S.params.dim, w = S.w2v;
+    P.innerHTML = box('5 · Entrenamiento (SGD)', `<p>Dos matrices se inicializan al azar y se ajustan con descenso de gradiente: <b>W<sub>in</sub></b> (vectores de palabra) y <b>W<sub>out</sub></b> (vectores de contexto). Para cada par se minimiza:</p>
+      <div class="formula">L = −log σ(v<sub>c</sub>·u<sub>o</sub>) − Σ<sub>k</sub> log σ(−v<sub>c</sub>·u<sub>k</sub>)</div>
+      <table class="t" style="margin-top:10px"><tr><td>W<sub>in</sub></td><td class="m">${V} × ${D}</td></tr><tr><td>W<sub>out</sub></td><td class="m">${V} × ${D}</td></tr><tr><td>Parámetros</td><td class="m">${fmt(2 * V * D)}</td></tr><tr><td>Épocas / lr</td><td class="m">${w.p.epochs} / ${w.p.lr} → 0 (lineal)</td></tr><tr><td>Pérdida final</td><td class="m">${w.lossHist.length ? w.lossHist[w.lossHist.length - 1].toFixed(4) : '…'}</td></tr></table>`,
+      `<div class="mini-h">Pérdida promedio por época</div><canvas id="lossBig"></canvas>`);
+    drawLoss($('lossBig'), false);
+  } else if (i === 5) {
+    const id = S.sel >= 0 ? S.sel : (ds.word2id.get('rey') ?? 0), V = ds.words.length, D = S.params.dim;
+    const rowsIds = [id, ...nearest(S.nvecs, S.nvecs[id], 5, 'cos', new Set([id])).map(r => r.i)];
+    const far = nearest(S.nvecs, S.nvecs[id].map(x => -x), 2, 'cos', new Set(rowsIds)).map(r => r.i);
+    const all = [...rowsIds, ...far], nd = Math.min(D, 14);
+    const mx = Math.max(...all.flatMap(r => S.vecs[r].slice(0, nd).map(Math.abs))) || 1;
+    const showOnes = Math.min(V, 120), pos = Math.min(id, showOnes - 1);
+    P.innerHTML = box('6 · Matriz de embedding', `<p>Tras entrenar, <b>W<sub>in</sub></b> es la tabla de embeddings. Obtener el vector de una palabra es un <b>lookup</b>: multiplicar su vector one-hot por la matriz, lo que equivale a tomar la fila de su ID.</p>
+      <div class="formula">e(<b>${esc(ds.words[id])}</b>) = onehot(${id}) · W<sub>in</sub> = W<sub>in</sub>[${id}, :] ∈ ℝ<sup>${D}</sup></div>
+      <div class="mini-h" style="margin-top:10px">one-hot de «${esc(ds.words[id])}» (primeras ${showOnes} de ${V} posiciones)</div>
+      <div class="onehot">${Array.from({ length: showOnes }, (_, j) => `<i class="${j === pos && id < showOnes ? 'one' : ''}"></i>`).join('')}</div>
+      <p style="font-size:11.5px">Selecciona otro punto en el mapa para cambiar la palabra.</p>`,
+      `<div class="mini-h">Filas de W<sub>in</sub>: la palabra, sus 5 vecinas y 2 palabras lejanas (primeras ${nd} de ${D} dims)</div>
+       <table class="matrix" style="margin-top:6px"><tr><th></th>${Array.from({ length: nd }, (_, d) => `<th>d${d}</th>`).join('')}<th>…</th></tr>
+       ${all.map((r, j) => `<tr${j === 6 ? ' style="border-top:4px solid #fff"' : ''}><td class="w" style="color:${j === 0 ? 'var(--accent-dark)' : j > 5 ? 'var(--faint)' : 'inherit'}">${j > 5 ? '↯ ' : ''}${esc(ds.words[r])} <small style="color:var(--faint);font-weight:400">#${r}</small></td>${S.vecs[r].slice(0, nd).map(x => `<td style="background:${divColor(x / mx)}">${x.toFixed(2)}</td>`).join('')}<td style="color:var(--faint)">…</td></tr>`).join('')}</table>
+       <p class="hint">Las palabras similares tienen patrones de color parecidos; las lejanas (↯), patrones distintos.</p>`);
+  } else if (i === 6) {
+    const ids = S.active.slice(0, 12);
+    const r = S.pcaRes;
+    P.innerHTML = box('7 · Reducción de dimensionalidad', `<p>No podemos ver ${S.params.dim} dimensiones, así que las proyectamos:</p>
+      <p style="margin-top:6px"><b>PCA</b>: proyección lineal sobre las direcciones de máxima varianza (conserva estructura global).<br><b>t-SNE</b>: no lineal, conserva vecindarios locales (bueno para ver clusters).<br><b>Personalizada</b>: ejes definidos por diferencias entre palabras.</p>
+      ${r ? `<div class="formula">PCA: ${r.explained.slice(0, 3).map((e, j) => `PC${j + 1} ${(e * 100).toFixed(1)}%`).join(' · ')}<br>3 comp. explican ${(r.explained.slice(0, 3).reduce((a, b) => a + b, 0) * 100).toFixed(1)}% de la varianza</div>` : ''}`,
+      `<table class="t"><thead><tr><th>Palabra</th><th>Vector original (${S.params.dim}D)</th><th>→</th><th>x</th><th>y</th><th>z</th></tr></thead><tbody>${ids.map(id => { const t = S.tgt.get(id) || [0, 0, 0]; return `<tr><td><b>${esc(ds.words[id])}</b></td><td class="m" style="color:var(--muted)">[${S.vecs[id].slice(0, 5).map(x => x.toFixed(2)).join(', ')}, …]</td><td>→</td><td class="m">${t[0].toFixed(3)}</td><td class="m">${t[1].toFixed(3)}</td><td class="m">${S.view3D ? t[2].toFixed(3) : '—'}</td></tr>`; }).join('')}</tbody></table>`);
+  }
+  document.querySelectorAll('.step').forEach(b => b.classList.toggle('ok', S.ds && +b.dataset.s !== S.step));
+}
+
+// ---------------------- exportar ----------------------
+function download(name, text, type) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: type || 'text/tab-separated-values' })); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function exportTSV() {
+  if (!S.ds) return;
+  const ids = S.pool;
+  download('vectors.tsv', ids.map(i => S.vecs[i].map(x => x.toFixed(6)).join('\t')).join('\n'));
+  setTimeout(() => download('metadata.tsv', 'palabra\tcategoria\tfrecuencia\n' + ids.map(i => `${S.ds.words[i]}\t${catName(i)}\t${S.ds.counts[i]}`).join('\n')), 400);
+}
+
+// ---------------------- eventos UI ----------------------
+function bindRange(id, out, key, cb) {
+  const el = $(id); el.oninput = () => { $(out).textContent = el.value; if (key) S.params[key] = +el.value; cb && cb(); };
+}
+bindRange('pDim', 'vDim', 'dim'); bindRange('pWin', 'vWin', 'window'); bindRange('pNeg', 'vNeg', 'negative');
+bindRange('pEp', 'vEp', 'epochs'); bindRange('pMin', 'vMin', 'minCount');
+$('pLr').onchange = e => S.params.lr = +e.target.value;
+$('pSeed').onchange = e => S.params.seed = Math.max(1, +e.target.value || 1);
+$('btnTrain').onclick = startTraining;
+$('btnStop').onclick = () => S.stopReq = true;
+$('source').onchange = e => {
+  S.source = e.target.value; $('customBox').style.display = S.source === 'custom' ? '' : 'none';
+  if (S.source === 'custom') { $('colorBy').value = 'kmeans'; S.colorBy = 'kmeans'; if (!$('customText').value) $('customText').value = generateCorpus(1500, 99).join('.\n') + '.'; $('pEp').value = 40; $('pEp').oninput(); }
+  else { $('colorBy').value = 'cat'; S.colorBy = 'cat'; startTraining(); }
+};
+$('fileIn').onchange = e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { $('customText').value = t; startTraining(); }); };
+$('colorBy').onchange = e => { S.colorBy = e.target.value; if (S.colorBy === 'kmeans' && !S.kmeans && S.ds) computeKmeans(); buildLegend(); renderInspector(); };
+$('showCtx').onchange = e => { S.showCtx = e.target.checked; S.isolated = null; computePool(); S.kmeans = null; if (S.colorBy === 'kmeans') computeKmeans(); buildLegend(); S.prevComps = null; if (S.method === 'tsne') startTsne(); else project(); renderInspector(); };
+$('normVec').onchange = e => { S.normalize = e.target.checked; S.prevComps = null; if (S.method === 'tsne') startTsne(); else project(); renderInspector(); };
+document.querySelectorAll('#methodTabs .tab').forEach(t => t.onclick = () => setMethod(t.dataset.m));
+['pcX', 'pcY', 'pcZ'].forEach((id, k) => $(id).onchange = e => { S.pcaAxes[k] = +e.target.value; project(); });
+$('tPerp').oninput = e => { $('vPerp').textContent = e.target.value; S.tsnePerp = +e.target.value; };
+$('tPerp').onchange = () => startTsne();
+$('tLr').oninput = e => { $('vTlr').textContent = e.target.value; S.tsneLr = +e.target.value; if (S.tsne) S.tsne.eps = S.tsneLr; };
+$('tRun').onclick = () => {
+  if (!S.tsne) return startTsne();
+  if (S.tsneRunning) { S.tsneRunning = false; $('tRun').textContent = 'Continuar'; $('tState').textContent = 'en pausa'; }
+  else { if (S.tsne.iter >= 750) S.tsne.iter = 600; S.tsneRunning = true; $('tRun').textContent = 'Pausar'; $('tState').textContent = 'optimizando…';
+    const ids = S.active.slice();
+    const loop = () => { if (!S.tsneRunning || S.method !== 'tsne') return; for (let i = 0; i < 3; i++) S.tsne.step(); setTargets(ids, S.tsne.positions().map(p => [p[0], p[1], p[2] || 0])); $('tIter').textContent = S.tsne.iter; updateStatus(); if (S.tsne.iter >= 750) { S.tsneRunning = false; $('tRun').textContent = 'Continuar'; $('tState').textContent = 'convergió ✓'; return; } requestAnimationFrame(loop); };
+    requestAnimationFrame(loop); }
+};
+$('tRestart').onclick = () => startTsne();
+['cxL', 'cxR', 'cyL', 'cyR'].forEach(id => $(id).addEventListener('change', () => S.method === 'custom' && project()));
+$('b3d').onclick = () => { if (S.method === 'custom') return; setView(true); };
+$('b2d').onclick = () => setView(false);
+$('bLabels').onclick = () => { S.labelsAll = !S.labelsAll; $('bLabels').classList.toggle('on', S.labelsAll); };
+$('bRotate').onclick = () => { S.autoRotate = !S.autoRotate; $('bRotate').classList.toggle('on', S.autoRotate); };
+$('bAxes').onclick = () => { S.showAxes = !S.showAxes; $('bAxes').classList.toggle('on', S.showAxes); };
+$('bAxes').classList.add('on');
+$('bFit').onclick = fitView;
+$('bPng').onclick = () => { const a = document.createElement('a'); const c2 = document.createElement('canvas'); c2.width = cv.width; c2.height = cv.height; const g = c2.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c2.width, c2.height); g.drawImage(cv, 0, 0); a.href = c2.toDataURL('image/png'); a.download = 'embedding-projector.png'; a.click(); };
+$('bShowAll').onclick = () => { S.isolated = null; S.analogyIso = false; computePool(); S.prevComps = null; if (S.method === 'tsne') startTsne(); else project(); updateStatus(); };
+$('bIso').onclick = () => { if (S.sel < 0) return; S.analogyIso = false; S.isolated = new Set([S.sel, ...S.neighbors.map(n => n.i)]); computePool(); S.prevComps = null; fitView(); if (S.method === 'tsne') startTsne(); else project(); };
+$('bClear').onclick = () => select(-1);
+$('q').oninput = doSearch;
+$('q').onkeydown = e => { if (e.key === 'Enter') { const f = $('results').querySelector('.res'); if (f) select(+f.dataset.id); } };
+document.querySelectorAll('#nbSec .seg button').forEach(b => b.onclick = () => { S.metric = b.dataset.mt; document.querySelectorAll('#nbSec .seg button').forEach(x => x.classList.toggle('on', x === b)); renderInspector(); });
+$('kN').oninput = e => { S.k = +e.target.value; $('vK').textContent = S.k; renderInspector(); };
+$('bCopy').onclick = () => { if (S.sel >= 0) navigator.clipboard.writeText('[' + S.vecs[S.sel].map(x => x.toFixed(6)).join(', ') + ']').then(() => { $('bCopy').textContent = '¡Copiado!'; setTimeout(() => $('bCopy').textContent = 'Copiar vector', 1200); }); };
+$('presets').innerHTML = PRESETS.map((p, i) => `<button data-i="${i}">${p[0]} − ${p[1]} + ${p[2]}</button>`).join('');
+$('presets').querySelectorAll('button').forEach(b => b.onclick = () => { const p = PRESETS[+b.dataset.i]; $('aA').value = p[0]; $('aB').value = p[1]; $('aC').value = p[2]; runAnalogy(); });
+$('bAna').onclick = () => runAnalogy();
+$('bAnaClr').onclick = () => { S.analogy = null; renderAnalogy([]); if (S.analogyIso) $('bShowAll').click(); };
+['aA', 'aB', 'aC'].forEach(id => $(id).onkeydown = e => e.key === 'Enter' && runAnalogy());
+$('btnExport').onclick = exportTSV;
+$('btnHelp').onclick = () => $('modal').style.display = 'grid';
+$('modal').onclick = e => { if (e.target.id === 'modal') $('modal').style.display = 'none'; };
+window.addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  if (e.key === 'Escape') { select(-1); S.analogy = null; $('q').value = ''; doSearch(); $('modal').style.display = 'none'; }
+  if (e.key === 'l' || e.key === 'L') $('bLabels').click();
+  if (e.key === 'r' || e.key === 'R') $('bRotate').click();
+  if (e.key === 'f' || e.key === 'F') fitView();
+});
+
+// ---------------------- inicio ----------------------
+buildSteps();
+resize();
+requestAnimationFrame(frame);
+startTraining();
+window.__S = S;
+})();
+</script>
+</body></html>
